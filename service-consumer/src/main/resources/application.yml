@@ -1,0 +1,11 @@
+server:
+  port: 8083
+
+# ▼▼▼ 必须加上这一坨 ▼▼▼
+spring:
+  application:
+    name: service-consumer  # 1. 给自己起个名，网关就是按这个名字找你的
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848 # 2. 告诉服务去哪里登记

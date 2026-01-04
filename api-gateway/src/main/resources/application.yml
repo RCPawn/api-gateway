@@ -1,0 +1,40 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: api-gateway
+
+  # 1. 删掉 config import (或者留空，或者根本不写 spring.config.import)
+  # config:
+  #   import: []
+
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      # 2. 新增：关闭配置导入检查
+      config:
+        import-check:
+          enabled: false
+
+    gateway:
+      routes: [] # 留空，全靠动态加载
+
+    sentinel:
+      transport:
+        dashboard: localhost:8090
+      datasource:
+        gateway-flow-rules:
+          nacos:
+            server-addr: 127.0.0.1:8848
+            data-id: gateway-sentinel-rule.json
+            group-id: DEFAULT_GROUP
+            data-type: json
+            rule-type: gw-flow
+
+#  data:
+#    redis:
+#      host: 127.0.0.1
+#      port: 6379
+#      password: "123456"
+#      database: 6

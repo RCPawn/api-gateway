@@ -10,21 +10,24 @@ public class UserInfoInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        // 1. 从 Header 中获取网关透传的 User-Id
+        // 1. 获取 UserID (网关解析后传过来的)
         String userId = request.getHeader("X-User-Id");
-        
-        // 2. 如果不为空，存入 ThreadLocal
         if (StringUtils.hasText(userId)) {
             UserContext.setUserId(userId);
         }
+
+        // 2. 【关键新增】获取原始 Token (Authorization: Bearer xxx)
+        String token = request.getHeader("Authorization");
+        if (StringUtils.hasText(token)) {
+            UserContext.setToken(token);
+        }
         
-        // 3. 放行
         return true;
     }
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
-        // 4. 请求结束，必须清理 ThreadLocal，防止内存泄漏
+        // 必须清理，防止线程池复用导致数据混乱
         UserContext.remove();
     }
 }

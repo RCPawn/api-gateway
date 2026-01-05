@@ -1,6 +1,6 @@
 package com.rcpawn.filter;
 
-import com.rcpawn.common.util.JwtUtil; // 引入刚才写的工具类
+import com.rcpawn.common.util.JwtUtil;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -22,52 +22,55 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
-        // 1. 白名单放行 (比如登录接口、注册接口)
-        // 假设我们还没写登录接口，先留个口子，不然你怎么获取 Token 呢？
+        // 1. 白名单放行
         if (path.contains("/auth/login") || path.contains("/doc.html")) {
             return chain.filter(exchange);
         }
 
-        // 2. 获取 Token (通常放在 Header 的 Authorization 字段，或者 url 参数)
-        // 这里为了方便测试，我们先从 Query Param 里取，生产环境建议用 Header
-        String token = request.getQueryParams().getFirst("token");
-        
-        // 如果 url 没带，试着从 Header 取
-        if (token == null) {
-            String headerAuth = request.getHeaders().getFirst("Authorization");
-            if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
-                token = headerAuth.substring(7);
-            }
+        // 2. 获取 Token
+        // 优先从 Header 取（生产环境标准），其次从 URL 取（方便测试）
+        String token = null;
+        String headerAuth = request.getHeaders().getFirst("Authorization");
+
+        if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
+            token = headerAuth.substring(7);
+        } else {
+            // Header 没有，尝试从 URL 取
+            token = request.getQueryParams().getFirst("token");
         }
 
         // 3. 校验 Token
         String userId = null;
         if (token != null) {
-            userId = JwtUtil.getUserId(token); // 使用工具类解析
+            userId = JwtUtil.getUserId(token);
         }
 
-        // 4. 校验失败 -> 401 Unauthorized
+        // 4. 校验失败 -> 401
         if (userId == null) {
             ServerHttpResponse response = exchange.getResponse();
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
-
-            // 1. 设置 Header，告诉浏览器返回的是 JSON
             response.getHeaders().add("Content-Type", "application/json;charset=UTF-8");
-
-            // 2. 构造 JSON 字符串
             String message = "{\"code\": 401, \"message\": \"非法访问，Token无效或缺失\"}";
-
-            // 3. 写入响应体
             DataBuffer buffer = response.bufferFactory().wrap(message.getBytes(StandardCharsets.UTF_8));
             return response.writeWith(Mono.just(buffer));
         }
 
-        // 5. 【关键】Token 合法，把 UserID 传给下游服务
-        // 这样 Consumer/Provider 就能知道是谁在访问了
-        ServerHttpRequest newRequest = request.mutate()
-                .header("X-User-Id", userId)
-                .build();
+        // 5. 【核心修改】构建新请求头，传递给下游
+        ServerHttpRequest.Builder requestBuilder = request.mutate();
 
+        // 5.1 必定传递 UserID
+        requestBuilder.header("X-User-Id", userId);
+
+        // 5.2 【关键修复】如果原始请求 Header 里没 Token（说明是从 URL 拿的）
+        // 我们必须手动把它加进 Header，否则 Consumer 的拦截器拿不到 Token！
+        if (headerAuth == null) {
+            // 补全标准 Bearer 格式
+            requestBuilder.header("Authorization", "Bearer " + token);
+        }
+
+        ServerHttpRequest newRequest = requestBuilder.build();
+
+        // 放行
         return chain.filter(exchange.mutate().request(newRequest).build());
     }
 

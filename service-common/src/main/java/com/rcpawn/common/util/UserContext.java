@@ -1,19 +1,33 @@
 package com.rcpawn.common.util;
 
+
 public class UserContext {
-    // ThreadLocal 保证线程隔离，每个请求互不干扰
-    private static final ThreadLocal<String> userHolder = new ThreadLocal<>();
+    // 存放 UserID
+    private static final ThreadLocal<String> userIdHolder = new ThreadLocal<>();
+    // 【新增】存放 Token (因为 Feign 调用需要把这个令牌原样传下去)
+    private static final ThreadLocal<String> tokenHolder = new ThreadLocal<>();
 
     public static void setUserId(String userId) {
-        userHolder.set(userId);
+        userIdHolder.set(userId);
     }
 
     public static String getUserId() {
-        return userHolder.get();
+        return userIdHolder.get();
     }
 
-    // 务必记得清除，防止内存泄漏（尤其是在线程池环境下）
+    // 【新增】设置 Token
+    public static void setToken(String token) {
+        tokenHolder.set(token);
+    }
+
+    // 【新增】获取 Token
+    public static String getToken() {
+        return tokenHolder.get();
+    }
+
+    // 清除所有（防止内存泄漏）
     public static void remove() {
-        userHolder.remove();
+        userIdHolder.remove();
+        tokenHolder.remove();
     }
 }

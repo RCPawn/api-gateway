@@ -9,5 +9,5 @@ public interface ProviderClient {
 
     // 这里的路径必须和 service-provider Controller 里的路径完全一致
     @GetMapping("/hello")
-    String callHello(); 
+    String hello();
 }

@@ -32,6 +32,34 @@ spring:
             data-type: json
             rule-type: gw-flow
 
+knife4j:
+  enable: true
+  gateway:
+    enabled: true
+    # 聚合策略：手动配置 (最稳)
+    strategy: manual
+    routes:
+      - name: 用户服务 (Consumer)
+        # 这里的 /v3/api-docs 是 SpringBoot 3 默认的文档路径
+        # service-name 必须和 Nacos 里的服务名一致
+        url: /service-consumer/v3/api-docs
+        service-name: service-consumer
+        context-path: /service-consumer
+        order: 2
+      - name: 提供者服务 (Provider)
+        url: /service-provider/v3/api-docs
+        service-name: service-provider
+        context-path: /service-provider
+        order: 3
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # 暴露所有监控端点 (生产环境要谨慎)
+  endpoint:
+    health:
+      show-details: always
 #  data:
 #    redis:
 #      host: 127.0.0.1

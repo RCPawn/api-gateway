@@ -76,6 +76,19 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Knife4j -->
+        <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>knife4j-gateway-spring-boot-starter</artifactId>
+            <version>4.3.0</version>
+        </dependency>
+
+        <!-- 暴露监控端点 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- 响应式 Redis 依赖 (Gateway 是 WebFlux，必须用 reactive 版本) -->
 <!--        <dependency>-->
 <!--            <groupId>org.springframework.boot</groupId>-->

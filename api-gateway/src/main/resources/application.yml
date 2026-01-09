@@ -27,6 +27,11 @@ spring:
             group-id: DEFAULT_GROUP
             data-type: json
             rule-type: gw-flow # 指定规则类型为“网关流控”
+springdoc:
+  api-docs:
+    enabled: true  # 开启文档生成功能
+  swagger-ui:
+    enabled: false # 关闭自带的 Swagger UI，防止它抢占配置接口
 
 knife4j:
   enable: true
@@ -35,6 +40,12 @@ knife4j:
     # 聚合策略：手动配置 (最稳)
     strategy: manual
     routes:
+      - name: 网关管理服务 (Gateway)
+        url: /v3/api-docs?group=default # 访问本机的文档接口
+        service-name: api-gateway
+        context-path: / # 网关接口通常没有统一前缀，或者写 /admin
+        order: 1 # 排在第一个
+
       - name: 用户服务 (Consumer)
         # 这里的 /v3/api-docs 是 SpringBoot 3 默认的文档路径
         # service-name 必须和 Nacos 里的服务名一致
@@ -42,6 +53,7 @@ knife4j:
         service-name: service-consumer
         context-path: /service-consumer
         order: 2
+
       - name: 提供者服务 (Provider)
         url: /service-provider/v3/api-docs
         service-name: service-provider

@@ -1,18 +1,14 @@
 server:
-  port: 9000
+  port: 9000  # 网关对外的大门，所有流量从这进
 
 spring:
   application:
     name: api-gateway
 
-  # 1. 删掉 config import (或者留空，或者根本不写 spring.config.import)
-  # config:
-  #   import: []
-
   cloud:
     nacos:
-      server-addr: 127.0.0.1:8848
-      # 2. 新增：关闭配置导入检查
+      server-addr: 127.0.0.1:8848 # 告诉网关去哪里找组织（Nacos）
+      # 【细节】Spring Cloud 新版特性，关闭配置导入检查，防止没配置时报错
       config:
         import-check:
           enabled: false
@@ -22,15 +18,15 @@ spring:
 
     sentinel:
       transport:
-        dashboard: localhost:8090
-      datasource:
+        dashboard: localhost:8090 # Sentinel 控制台地址
+      datasource: # 【持久化】告诉 Sentinel：规则别存在内存里，去 Nacos 读 json 文件
         gateway-flow-rules:
           nacos:
             server-addr: 127.0.0.1:8848
             data-id: gateway-sentinel-rule.json
             group-id: DEFAULT_GROUP
             data-type: json
-            rule-type: gw-flow
+            rule-type: gw-flow # 指定规则类型为“网关流控”
 
 knife4j:
   enable: true
@@ -52,7 +48,7 @@ knife4j:
         context-path: /service-provider
         order: 3
 
-management:
+management:  #【监控探针】
   endpoints:
     web:
       exposure:

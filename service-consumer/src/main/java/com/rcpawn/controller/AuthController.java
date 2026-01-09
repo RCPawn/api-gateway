@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/consumer/auth")
 public class AuthController {
 
     @PostMapping("/login")

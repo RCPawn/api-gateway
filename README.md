@@ -1,7 +1,7 @@
 
 # 🛡️ Microservice Gateway Platform | 微服务流量治理与统一接入平台
 
-> 基于 Spring Cloud Gateway + Nacos + Sentinel 的生产级微服务网关，实现了动态路由热更新、全链路身份安全闭环与可视化流量治理。
+> 基于 Spring Cloud Gateway + Nacos + Sentinel 的微服务网关，实现了动态路由热更新、全链路身份安全闭环与可视化流量治理。
 
 ---
 

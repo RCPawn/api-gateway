@@ -128,8 +128,10 @@ Microservices ~~~ Infrastructure
 采用“手提箱”模式。在网关层将 UserID 装入 HTTP Header（装箱），在服务内部存入 ThreadLocal（拆箱使用），在发起 Feign 调用前再次拦截并注入 Header（再次装箱）。
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'noteTextColor': '#000000', 'actorTextColor': '#000000', 'signalTextColor': '#000000'}}}%%
 sequenceDiagram
     autonumber
+%% 强制参与者名字为黑色
     participant Client as 客户端
     participant Gateway as 网关(Gateway)
     participant Consumer as 消费者(Consumer)
@@ -138,28 +140,31 @@ sequenceDiagram
     Note over Client, Gateway: 阶段1：身份注入
     Client->>Gateway: 1. 请求携带 Token
 
-    rect rgb(230, 240, 255)
-    Note over Gateway: 网关层处理
-    Gateway->>Gateway: AuthGlobalFilter: 校验 Token 有效性
-    Gateway->>Gateway: 解析 UserID -> 注入 Request Header
-    Gateway->>Gateway: (X-User-Id: 1001)
+%% 蓝色背景块，颜色稍微加深一点，让白色/黑色字更明显
+    rect rgb(200, 220, 255)
+        Note over Gateway: 网关层处理
+        Gateway->>Gateway: AuthGlobalFilter: 校验 Token 有效性
+        Gateway->>Gateway: 解析 UserID -> 注入 Request Header
+        Gateway->>Gateway: (X-User-Id: 1001)
     end
 
     Gateway->>Consumer: 2. 转发请求 (携带 Header)
 
-    rect rgb(255, 250, 230)
-    Note over Consumer: 消费者服务 (RPC 发起方)
-    Consumer->>Consumer: MVC Interceptor: Header -> ThreadLocal (存入上下文)
-    Consumer->>Consumer: 执行业务逻辑 (使用 UserContext)
-    Consumer->>Consumer: Feign Interceptor: ThreadLocal -> Header (RPC 透传)
+%% 黄色背景块
+    rect rgb(255, 245, 200)
+        Note over Consumer: 消费者服务 (RPC 发起方)
+        Consumer->>Consumer: MVC Interceptor: Header -> ThreadLocal (存入上下文)
+        Consumer->>Consumer: 执行业务逻辑 (使用 UserContext)
+        Consumer->>Consumer: Feign Interceptor: ThreadLocal -> Header (RPC 透传)
     end
 
     Consumer->>Provider: 3. Feign RPC 调用 (携带 Header)
 
-    rect rgb(230, 255, 230)
-    Note over Provider: 提供者服务 (RPC 接收方)
-    Provider->>Provider: MVC Interceptor: Header -> ThreadLocal
-    Provider->>Provider: 业务闭环
+%% 绿色背景块
+    rect rgb(210, 255, 210)
+        Note over Provider: 提供者服务 (RPC 接收方)
+        Provider->>Provider: MVC Interceptor: Header -> ThreadLocal
+        Provider->>Provider: 业务闭环
     end
 ```
 

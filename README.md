@@ -1,11 +1,11 @@
 
-# 🛡️ Microservice Gateway Platform | 微服务流量治理与统一接入平台
+# 🛡️ 微服务流量治理与统一接入平台
 
 > 基于 Spring Cloud Gateway + Nacos + Sentinel 的微服务网关，实现了动态路由热更新、全链路身份安全闭环与可视化流量治理。
 
 ---
 
-## 🏗️ System Architecture | 系统架构
+## 🏗️ 系统架构
 
 ```mermaid
 graph TD
@@ -97,7 +97,7 @@ Microservices ~~~ Infrastructure
 
 ---
 
-## 🌟 Key Features | 核心特性与进度
+## 🌟 核心特性与进度
 
 ### 🚀 Backend Core (后端核心)
 *   ✅ **基础架构搭建**：完成 Nacos 注册中心接入，打通 Gateway -> Consumer -> Provider 调用链路。
@@ -112,16 +112,18 @@ Microservices ~~~ Infrastructure
 *   ✅ **API 文档聚合**：集成 Knife4j，在网关层统一聚合所有下游微服务的 Swagger 文档。
 *   ⬜ **高级安全**：(TODO) 待实现防重放攻击与 IP 黑名单过滤器。
 
-### 💻 Frontend Visualization (可视化控制台)
+### 💻 可视化控制台
 *   ✅ **管理后台**：基于 Vue 3 + Element Plus 构建。
 *   ✅ **路由可视化管理**：实现路由的**在线新增、编辑、删除**，操作结果实时同步至 Nacos。
 *   ⬜ **流量驾驶舱**：(TODO) 接入 ECharts 展示实时 QPS、CPU 水位监控。
 
+![image-20260111003346558](README.assets/image-20260111003346558.png)
+
 ---
 
-## 🔍 Core Logic Analysis | 核心技术原理解析
+## 🔍 核心技术原理解析
 
-### 1. 全链路 Token 透传机制 (Identity Propagation)
+### 1. 全链路 Token 透传机制
 > **解决痛点**：在微服务调用链中，用户信息通常只在网关层解析。下游服务之间互相调用（RPC）时，ThreadLocal 中的用户信息无法自动传递，导致鉴权失败。
 
 **我的解决方案**：
@@ -190,7 +192,7 @@ sequenceDiagram
 
 ---
 
-### 🛠️ Tech Stack | 技术栈
+### 🛠️ 技术栈
 *   **Core Framework**: Spring Boot 3.x, Spring Cloud Alibaba 2022.x
 *   **Gateway**: Spring Cloud Gateway (WebFlux 响应式编程)
 *   **Service Discovery & Config**: Nacos 2.x

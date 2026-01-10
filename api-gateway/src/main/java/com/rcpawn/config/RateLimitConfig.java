@@ -7,7 +7,8 @@ import org.springframework.context.annotation.Primary; // 导入这个包
 import reactor.core.publisher.Mono;
 import java.util.Objects;
 
-@Configuration
+// 拥抱 sentinel 暂时不用这个文件
+//@Configuration
 public class RateLimitConfig {
 
     /**

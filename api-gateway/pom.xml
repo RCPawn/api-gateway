@@ -97,10 +97,10 @@
         </dependency>
 
         <!-- 响应式 Redis 依赖 (Gateway 是 WebFlux，必须用 reactive 版本) -->
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+        </dependency>
 
         <!-- Sentinel 核心依赖 -->
         <dependency>

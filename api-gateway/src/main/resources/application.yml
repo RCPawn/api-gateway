@@ -5,6 +5,13 @@ spring:
   application:
     name: api-gateway
 
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password: "123456"
+      database: 6
+
   cloud:
     nacos:
       server-addr: 127.0.0.1:8848 # 告诉网关去哪里找组织（Nacos）
@@ -68,9 +75,3 @@ management:  #【监控探针】
   endpoint:
     health:
       show-details: always
-#  data:
-#    redis:
-#      host: 127.0.0.1
-#      port: 6379
-#      password: "123456"
-#      database: 6

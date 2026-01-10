@@ -9,12 +9,19 @@
 
 ```mermaid
 graph TD
-%% --- 样式定义 (保持原样，清爽配色) ---
-    classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,rx:10,ry:10;
-    classDef gateway fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,rx:5,ry:5;
-    classDef microservice fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,rx:5,ry:5;
-    classDef middleware fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,rx:5,ry:5;
-    classDef db fill:#e0f7fa,stroke:#006064,stroke-width:2px,rx:5,ry:5;
+%% =======================
+%% 🎨 样式定义 (强制深色字体)
+%% =======================
+%% 蓝色系：客户端 - 字体强制黑色
+    classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,rx:10,ry:10,color:#000;
+%% 绿色系：网关 - 字体强制深绿
+    classDef gateway fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,rx:5,ry:5,color:#1b5e20;
+%% 黄色系：微服务 - 字体强制深棕
+    classDef microservice fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,rx:5,ry:5,color:#3e2723;
+%% 紫色系：中间件 - 字体强制深紫
+    classDef middleware fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,rx:5,ry:5,color:#4a148c;
+%% 青色系：数据库 - 字体强制深青
+    classDef db fill:#e0f7fa,stroke:#006064,stroke-width:2px,rx:5,ry:5,color:#004d40;
 
 %% =======================
 %% 1. 顶层入口
@@ -37,7 +44,7 @@ G_Auth --> G_Sec --> G_Limit --> G_Route
 end
 
 %% =======================
-%% 3. 微服务层 (改为横向流水线，更清晰)
+%% 3. 微服务层 (横向流水线)
 %% =======================
 subgraph Microservices [Microservice Call Chain]
 direction LR
@@ -47,14 +54,14 @@ Feign_Int[⚡ Feign Interceptor]:::microservice
 Provider[📦 Provider Service]:::microservice
 MVC_Int[📥 MVC Interceptor]:::microservice
 
-%% 流转逻辑 (一条直线)
+%% 流转逻辑
 Consumer --1.RPC Call--> Feign_Int
 Feign_Int --2.Header Relay--> MVC_Int
 MVC_Int --3.Context Init--> Provider
 end
 
 %% =======================
-%% 4. 基础设施层 (沉底作为地基)
+%% 4. 基础设施层 (沉底)
 %% =======================
 subgraph Infrastructure [Infrastructure Base]
 direction LR
@@ -64,7 +71,7 @@ Nacos[("Nacos (Config/Registry)")]:::middleware
 end
 
 %% =======================
-%% 5. 跨层级连线 (关键优化点)
+%% 5. 跨层级连线
 %% =======================
 
 %% 入口连接
@@ -75,16 +82,16 @@ Admin --> G_Route
 G_Route --> Consumer
 G_Route --> Provider
 
-%% 基础设施连接 (使用虚线，避免视觉干扰)
+%% 基础设施连接 (虚线)
 G_Sec -.->|Check| Redis
 G_Limit -.->|Push Rules| Sentinel
 G_Route -.->|Pull Routes| Nacos
 
-%% 服务注册与配置 (简化线条，统一指向)
+%% 服务注册与配置
 Consumer -.->|Register| Nacos
 Provider -.->|Register| Nacos
 
-%% 隐藏的布局辅助线 (让Infra沉底)
+%% 布局辅助
 Microservices ~~~ Infrastructure
 ```
 

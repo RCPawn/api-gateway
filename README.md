@@ -9,75 +9,83 @@
 
 ```mermaid
 graph TD
-%% --- 样式定义 ---
-    classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
-    classDef gateway fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef microservice fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
-    classDef middleware fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
-    classDef database fill:#e0f7fa,stroke:#006064,stroke-width:2px;
+%% --- 样式定义 (保持原样，清爽配色) ---
+    classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,rx:10,ry:10;
+    classDef gateway fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,rx:5,ry:5;
+    classDef microservice fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,rx:5,ry:5;
+    classDef middleware fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,rx:5,ry:5;
+    classDef db fill:#e0f7fa,stroke:#006064,stroke-width:2px,rx:5,ry:5;
 
-%% --- 客户端层 ---
-    Client([🖥️ Client / Browser]):::client
-Admin([🛠️ Vue3 Admin Dashboard]):::client
+%% =======================
+%% 1. 顶层入口
+%% =======================
+    Client([💻 Client / Browser]):::client
+Admin([🛠️ Vue3 Dashboard]):::client
 
-%% --- 网关层 (核心) ---
-subgraph Gateway_Layer [API Gateway Core - Netty]
+%% =======================
+%% 2. 网关层 (纵向责任链)
+%% =======================
+subgraph Gateway_Core [API Gateway Core]
 direction TB
-G_Auth[🛡️ Auth Filter<br/>JWT Authentication]:::gateway
-G_Security[🔒 Security Filter<br/>Redis Replay Attack]:::gateway
-G_Route[🔀 Dynamic Routing<br/>Nacos Listener]:::gateway
-G_Limit[🚦 Traffic Control<br/>Sentinel Limiter]:::gateway
-G_Doc[📚 Doc Aggregation<br/>Knife4j / Swagger]:::gateway
+G_Auth[🛡️ Auth Filter]:::gateway
+G_Sec[🔒 Security Filter]:::gateway
+G_Limit[🚦 Sentinel Limiter]:::gateway
+G_Route[🔀 Dynamic Routing]:::gateway
+
+%% 内部流转
+G_Auth --> G_Sec --> G_Limit --> G_Route
 end
 
-%% --- 微服务层 ---
-subgraph Service_Layer [Microservice Cluster]
-direction TB
-Consumer[🛒 Service Consumer<br/>Feign Client]:::microservice
-Provider[📦 Service Provider<br/>Business Logic]:::microservice
+%% =======================
+%% 3. 微服务层 (改为横向流水线，更清晰)
+%% =======================
+subgraph Microservices [Microservice Call Chain]
+direction LR
+%% 节点
+Consumer[🛒 Consumer Service]:::microservice
+Feign_Int[⚡ Feign Interceptor]:::microservice
+Provider[📦 Provider Service]:::microservice
+MVC_Int[📥 MVC Interceptor]:::microservice
 
-%% 拦截器细节 (为了布局稳定，稍微调整了位置)
-subgraph Interceptors [Identity Propagation Logic]
-direction TB
-I_MVC[UserInfoInterceptor<br/>ThreadLocal]:::microservice
-I_Feign[FeignRequestInterceptor<br/>RequestTemplate]:::microservice
-end
-end
-
-%% --- 中间件层 ---
-subgraph Middleware_Layer [Infrastructure]
-direction TB
-Nacos[("Nacos<br/>Registry & Config")]:::middleware
-Sentinel[("Sentinel<br/>Dashboard")]:::middleware
-Redis[("Redis<br/>Cache & Lock")]:::database
+%% 流转逻辑 (一条直线)
+Consumer --1.RPC Call--> Feign_Int
+Feign_Int --2.Header Relay--> MVC_Int
+MVC_Int --3.Context Init--> Provider
 end
 
-%% --- 连线关系 ---
-Client -->|HTTP Request| G_Auth
-Admin -->|Manage Routes| G_Route
+%% =======================
+%% 4. 基础设施层 (沉底作为地基)
+%% =======================
+subgraph Infrastructure [Infrastructure Base]
+direction LR
+Redis[("Redis (Cache/Lock)")]:::db
+Sentinel[("Sentinel Dashboard")]:::middleware
+Nacos[("Nacos (Config/Registry)")]:::middleware
+end
 
-%% 网关内部流转
-G_Auth --> G_Security
-G_Security --> G_Limit
-G_Limit --> G_Route
-G_Route -->|Load Balance| Consumer
-G_Route -->|Load Balance| Provider
+%% =======================
+%% 5. 跨层级连线 (关键优化点)
+%% =======================
 
-%% 网关与中间件交互 (双向虚线)
-G_Route -.->|Subscribe/Pull| Nacos
-Nacos -.->|Push Config| G_Route
+%% 入口连接
+Client --> G_Auth
+Admin --> G_Route
+
+%% 网关向下分发
+G_Route --> Consumer
+G_Route --> Provider
+
+%% 基础设施连接 (使用虚线，避免视觉干扰)
+G_Sec -.->|Check| Redis
 G_Limit -.->|Push Rules| Sentinel
-G_Security -.->|Check Nonce| Redis
+G_Route -.->|Pull Routes| Nacos
 
-%% 微服务内部交互
-Consumer -->|1. Feign Call| I_Feign
-I_Feign -->|2. Header Relay| Provider
-Provider -->|3. Intercept| I_MVC
-
-%% 服务与中间件
+%% 服务注册与配置 (简化线条，统一指向)
 Consumer -.->|Register| Nacos
 Provider -.->|Register| Nacos
-Sentinel -.->|Persist Rules| Nacos
+
+%% 隐藏的布局辅助线 (让Infra沉底)
+Microservices ~~~ Infrastructure
 ```
 
 ---

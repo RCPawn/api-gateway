@@ -1,0 +1,24 @@
+server:
+  port: 8084 # 占用 8084 端口
+
+spring:
+  application:
+    name: service-log # Nacos 里的名字
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+
+  # RabbitMQ 配置
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672 # 注意：代码连接端口是 5672，不是网页的 15672
+    username: guest
+    password: guest
+
+  # 数据库配置 (先配上，等会建表)
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/gateway_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 1234

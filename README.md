@@ -89,9 +89,9 @@ end
 
 ### 🚀 Backend Core (后端核心)
 *   ✅ **基础架构搭建**：完成 Nacos 注册中心接入，打通 Gateway -> Consumer -> Provider 调用链路。
-*   ✅ **全链路身份闭环 (核心难点)**：设计 `ThreadLocal` + `Feign` 拦截器透传方案，实现 Token/UserID 在微服务链中的无缝传递。
+*   ✅ **全链路身份闭环 **：设计 `ThreadLocal` + `Feign` 拦截器透传方案，实现 Token/UserID 在微服务链中的无缝传递。
 *   ✅ **动态路由热更新**：基于 Nacos Config 监听机制，实现路由配置修改**秒级生效**，无需重启网关。
-*   ✅ **高可用流量治理**：
+*   ✅ **流量治理**：
     *   集成 Sentinel 实现网关层限流与熔断降级。
     *   **自定义异常处理**：返回标准化的 JSON 提示。
     *   配置规则持久化到 Nacos，避免重启丢失。
@@ -195,6 +195,38 @@ sequenceDiagram
     Gateway-->>User: 渲染接口文档
 ```
 
+### 4. 网关异步日志与审计
+```mermaid
+graph TD
+    %% 样式定义
+    classDef mq fill:#ff9800,stroke:#e65100,color:white;
+    classDef db fill:#2196f3,stroke:#0d47a1,color:white;
+    classDef gateway fill:#4caf50,stroke:#1b5e20,color:white;
+
+    User([👤 客户端请求]) --> Gateway
+    
+    subgraph 网关层 [API Gateway]
+        Gateway[LogGlobalFilter]:::gateway
+        Sender[RabbitTemplate]
+    end
+    
+    Gateway -->|1. 正常业务转发| MicroService[📦 业务微服务]
+    MicroService -->|响应| Gateway
+    
+    Gateway --"2. 异步投递 (Fire & Forget)"--> MQ
+    
+    subgraph 中间件层
+        MQ((RabbitMQ 队列\ngateway_log_queue)):::mq
+    end
+    
+    subgraph 日志服务层 [Service-Log]
+        Consumer[👂 LogListener 监听器]
+        Mapper[MyBatis-Plus Mapper]
+    end
+    
+    MQ -->|3. 削峰消费| Consumer
+    Consumer -->|4. 持久化| DB[(MySQL gateway_log)]:::db
+```
 ---
 
 ## 🛠️ 技术栈

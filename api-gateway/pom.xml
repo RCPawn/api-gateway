@@ -144,6 +144,13 @@
             <!-- 👇 修改这里：改成和父工程一样的 1.0.0，或者用变量 -->
             <version>1.0.0</version>
         </dependency>
+
+        <!-- api-gateway/pom.xml -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

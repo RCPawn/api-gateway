@@ -9,6 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="api-gateway" />
         <module name="service-consumer" />
+        <module name="service-log" />
         <module name="service-provider" />
         <module name="service-common" />
       </profile>
@@ -19,6 +20,7 @@
       <module name="api-gateway" options="-parameters" />
       <module name="service-common" options="-parameters" />
       <module name="service-consumer" options="-parameters" />
+      <module name="service-log" options="-parameters" />
       <module name="service-provider" options="-parameters" />
     </option>
   </component>

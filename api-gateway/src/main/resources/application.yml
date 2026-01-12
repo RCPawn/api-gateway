@@ -12,6 +12,12 @@ spring:
       password: "123456"
       database: 6
 
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
+
   cloud:
     nacos:
       server-addr: 127.0.0.1:8848 # 告诉网关去哪里找组织（Nacos）

@@ -1,6 +1,7 @@
 package com.rcpawn.filter;
 
 import com.rcpawn.util.RedisUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -15,10 +16,11 @@ import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 
-@Component
+@Slf4j
+//@Component
 public class ReplayAttackFilter implements GlobalFilter, Ordered {
 
-    @Autowired
+//    @Autowired
     private RedisUtil redisUtil;
 
     // 限制请求时间必须在 5 分钟内
@@ -39,6 +41,12 @@ public class ReplayAttackFilter implements GlobalFilter, Ordered {
         // 2. 获取 Header 中的 Timestamp 和 Nonce
         String timestamp = exchange.getRequest().getHeaders().getFirst("Timestamp");
         String nonce = exchange.getRequest().getHeaders().getFirst("Nonce");
+
+        // 👇👇👇【新增后门】👇👇👇
+        // 如果 Nonce 是 "test-skip"，直接放行，不存 Redis，不检查重复
+                if ("test-skip".equals(nonce)) {
+                    return chain.filter(exchange);
+                }
 
         // 简单校验非空
         if (!StringUtils.hasText(timestamp) || !StringUtils.hasText(nonce)) {
@@ -63,7 +71,7 @@ public class ReplayAttackFilter implements GlobalFilter, Ordered {
         // 逻辑：尝试把 nonce 存入 Redis，有效期 5 分钟。
         // 如果 Redis 里已经有了，说明是重复请求。
         // 注意：这里用 setIfAbsent (SETNX) 逻辑最好，但简单起见我们先查再存
-        
+
         return redisUtil.hasKey(nonce)
                 .flatMap(exists -> {
                     if (exists) {
@@ -71,6 +79,7 @@ public class ReplayAttackFilter implements GlobalFilter, Ordered {
                     } else {
                         // 存入 Redis，过期时间要 >= MAX_REQUEST_TIME (这里设为 300秒)
                         // 必须 subscribe() 订阅才能执行保存操作，或者使用 flatMap 连接流
+                        log.info("Nonce 检查通过，已存入Redis，nonce: {}", nonce);
                         return redisUtil.set(nonce, "1", 300)
                                 .flatMap(success -> chain.filter(exchange));
                     }
@@ -91,6 +100,6 @@ public class ReplayAttackFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -1; // 优先级高一点，排在鉴权之前或之后都可以
+        return 0; // 优先级高一点，排在鉴权之前或之后都可以
     }
 }

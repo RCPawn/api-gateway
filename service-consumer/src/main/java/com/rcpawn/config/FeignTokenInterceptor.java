@@ -25,7 +25,7 @@ public class FeignTokenInterceptor implements RequestInterceptor {
         if (StringUtils.hasText(token)) {
             template.header("Authorization", token);
         }
-
+        System.out.println("ThreadLocal -> Header");
         // 把 UserID 也传下去 (方便下游直接用，不用再解析 Token)
         if (StringUtils.hasText(userId)) {
             template.header("X-User-Id", userId);

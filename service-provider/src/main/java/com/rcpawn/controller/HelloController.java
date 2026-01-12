@@ -12,6 +12,13 @@ public class HelloController {
     @Value("${server.port}") // 注入当前服务的端口号
     private String port;
 
+    @GetMapping("/slow")
+    public String slow() throws InterruptedException {
+        // 故意卡顿 200ms
+        Thread.sleep(200);
+        return "我是慢接口，我睡了 200ms";
+    }
+
     @GetMapping("/hello")
     public String sayHello(HttpServletRequest request) {
         // 1. 从 ThreadLocal 获取（验证拦截器是否生效）

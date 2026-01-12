@@ -21,6 +21,8 @@ public class UserInfoInterceptor implements HandlerInterceptor {
         if (StringUtils.hasText(token)) {
             UserContext.setToken(token);
         }
+
+        System.out.println("Header -> ThreadLocal");
         
         return true;
     }

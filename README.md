@@ -89,7 +89,7 @@ end
 
 ### 🚀 Backend Core (后端核心)
 *   ✅ **基础架构搭建**：完成 Nacos 注册中心接入，打通 Gateway -> Consumer -> Provider 调用链路。
-*   ✅ **全链路身份闭环 **：设计 `ThreadLocal` + `Feign` 拦截器透传方案，实现 Token/UserID 在微服务链中的无缝传递。
+*   ✅ **全链路身份闭环**：设计 `ThreadLocal` + `Feign` 拦截器透传方案，实现 Token/UserID 在微服务链中的无缝传递。
 *   ✅ **动态路由热更新**：基于 Nacos Config 监听机制，实现路由配置修改**秒级生效**，无需重启网关。
 *   ✅ **流量治理**：
     *   集成 Sentinel 实现网关层限流与熔断降级。

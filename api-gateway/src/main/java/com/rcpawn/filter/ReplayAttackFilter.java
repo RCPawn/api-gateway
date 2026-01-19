@@ -17,10 +17,10 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
-//@Component
+@Component
 public class ReplayAttackFilter implements GlobalFilter, Ordered {
 
-//    @Autowired
+    @Autowired
     private RedisUtil redisUtil;
 
     // 限制请求时间必须在 5 分钟内
@@ -67,21 +67,17 @@ public class ReplayAttackFilter implements GlobalFilter, Ordered {
             return errorResponse(exchange, "请求已过期，拒绝访问");
         }
 
-        // 4. 校验 Nonce (核心：Redis 查重)
-        // 逻辑：尝试把 nonce 存入 Redis，有效期 5 分钟。
-        // 如果 Redis 里已经有了，说明是重复请求。
-        // 注意：这里用 setIfAbsent (SETNX) 逻辑最好，但简单起见我们先查再存
-
-        return redisUtil.hasKey(nonce)
-                .flatMap(exists -> {
-                    if (exists) {
-                        return errorResponse(exchange, "检测到重放攻击(Nonce重复)");
-                    } else {
-                        // 存入 Redis，过期时间要 >= MAX_REQUEST_TIME (这里设为 300秒)
-                        // 必须 subscribe() 订阅才能执行保存操作，或者使用 flatMap 连接流
+        // 4. 校验 Nonce (原子性升级版)
+        // 利用 Lua 脚本原子执行：如果有，返回 false；如果没有，存入并返回 true
+        return redisUtil.setIfAbsent(nonce, "1", 300)
+                .flatMap(success -> {
+                    if (success) {
+                        // 成功存入 -> 说明是第一次 -> 放行
                         log.info("Nonce 检查通过，已存入Redis，nonce: {}", nonce);
-                        return redisUtil.set(nonce, "1", 300)
-                                .flatMap(success -> chain.filter(exchange));
+                        return chain.filter(exchange);
+                    } else {
+                        // 存入失败 -> 说明 Redis 里已经有了 -> 拦截
+                        return errorResponse(exchange, "检测到重放攻击(Nonce重复)");
                     }
                 });
     }

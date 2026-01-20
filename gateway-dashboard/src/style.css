@@ -1,3 +1,4 @@
+/*
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -76,4 +77,39 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+*/
+/* 全局重置 */
+:root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    color-scheme: light dark;
+    color: rgba(255, 255, 255, 0.87);
+    background-color: #0f172a; /* 保持深色底 */
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden; /* 防止出现双重滚动条 */
+}
+
+/* 覆盖 Element Plus 的一些默认白底样式，让它变透明或深色 */
+.el-table, .el-table__expanded-cell {
+    background-color: transparent !important;
+    color: #e2e8f0 !important;
+}
+.el-table th, .el-table tr, .el-table td {
+    background-color: transparent !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+}
+.el-table--enable-row-hover .el-table__body tr:hover>td {
+    background-color: rgba(255,255,255,0.05) !important;
 }

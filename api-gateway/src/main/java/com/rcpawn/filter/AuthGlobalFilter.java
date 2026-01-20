@@ -26,9 +26,10 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         // 必须放行 /v3/api-docs，否则文档数据加载不出来
         if (path.contains("/auth/login") ||
                 path.contains("/doc.html") ||
-                path.contains("/v3/api-docs") ||  // <--- 新增这行
-                path.contains("/webjars") ||      // <--- 新增这行(静态资源)
-                path.contains("/favicon.ico")) {  // <--- 新增这行(图标)
+                path.contains("/v3/api-docs") ||
+                path.contains("/webjars") ||      // 静态资源
+                path.contains("/log/logs") ||
+                path.contains("/favicon.ico")) {  // 图标
             return chain.filter(exchange);
         }
 

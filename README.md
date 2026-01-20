@@ -105,7 +105,7 @@ end
 *   ✅ **路由可视化管理**：彻底告别手写 JSON！实现路由的**在线新增、编辑、删除**，操作结果实时同步至 Nacos。
 *   ⬜ **流量驾驶舱**：(TODO) 接入 ECharts 展示实时 QPS、CPU 水位监控。
 
-![image-20260111003346558](README.assets/image-20260111003346558.png)
+![image-20260120222844020](README.assets/image-20260120222844020.png)
 
 ---
 
@@ -198,34 +198,37 @@ sequenceDiagram
 ### 4. 网关异步日志与审计
 ```mermaid
 graph TD
-    %% 样式定义
-    classDef mq fill:#ff9800,stroke:#e65100,color:white;
-    classDef db fill:#2196f3,stroke:#0d47a1,color:white;
-    classDef gateway fill:#4caf50,stroke:#1b5e20,color:white;
+%% 样式定义
+    classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    classDef filter fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,rx:5;
+    classDef mq fill:#ff9800,stroke:#e65100,color:white,rx:5;
+    classDef db fill:#2196f3,stroke:#0d47a1,color:white,rx:5;
+    classDef service fill:#fff9c4,stroke:#fbc02d,color:black,rx:5;
 
-    User([👤 客户端请求]) --> Gateway
-    
-    subgraph 网关层 [API Gateway]
-        Gateway[LogGlobalFilter]:::gateway
-        Sender[RabbitTemplate]
-    end
-    
-    Gateway -->|1. 正常业务转发| MicroService[📦 业务微服务]
-    MicroService -->|响应| Gateway
-    
-    Gateway --"2. 异步投递 (Fire & Forget)"--> MQ
-    
-    subgraph 中间件层
-        MQ((RabbitMQ 队列\ngateway_log_queue)):::mq
-    end
-    
-    subgraph 日志服务层 [Service-Log]
-        Consumer[👂 LogListener 监听器]
-        Mapper[MyBatis-Plus Mapper]
-    end
-    
-    MQ -->|3. 削峰消费| Consumer
-    Consumer -->|4. 持久化| DB[(MySQL gateway_log)]:::db
+    Client([👤 Client]) --> Gateway
+
+subgraph Gateway [API Gateway]
+%% 核心逻辑：Filter 只是一个切面
+LogFilter[📝 LogGlobalFilter]:::filter
+Routing((Netty Routing)):::filter
+
+LogFilter --> Routing
+end
+
+%% 主业务流 (Main Flow)
+Routing <==>|HTTP Request/Response| MicroService[📦 MicroServices]:::service
+
+%% 异步旁路 (Async Sidecar)
+LogFilter --"🔥 Fire & Forget (Log DTO)"--> MQ
+
+subgraph Async_Audit [Async Audit System]
+MQ((RabbitMQ)):::mq
+LogService[⚙️ Service-Log]
+DB[(MySQL)]:::db
+
+MQ -->|Consume| LogService
+LogService -->|Insert| DB
+end
 ```
 ---
 

@@ -6,7 +6,6 @@ import java.io.Serializable;
 import java.util.Date;
 
 @Data
-// 👇【核心修复】明确指定表名，防止它乱转译
 @TableName("gateway_log")
 public class GatewayLogDTO implements Serializable {
     private static final long serialVersionUID = 1L;

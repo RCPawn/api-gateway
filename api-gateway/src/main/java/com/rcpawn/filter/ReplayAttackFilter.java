@@ -17,10 +17,10 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
-@Component
+//@Component
 public class ReplayAttackFilter implements GlobalFilter, Ordered {
 
-    @Autowired
+//    @Autowired
     private RedisUtil redisUtil;
 
     // 限制请求时间必须在 5 分钟内

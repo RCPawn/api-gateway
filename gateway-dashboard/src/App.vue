@@ -1,222 +1,217 @@
 <template>
-  <div class="app-container">
-    <h1>🚀 网关路由管理控制台</h1>
+  <div class="cockpit-container">
+    <!-- 1. 背景层 -->
+    <div class="background-grid"></div>
 
-    <!-- 顶部操作栏 -->
-    <div class="header">
-      <el-button type="primary" @click="handleRefresh">🔄 刷新列表</el-button>
-      <el-button type="success" @click="handleAdd">➕ 新增路由</el-button>
-    </div>
+    <!-- 2. 顶部悬浮指挥台 -->
+    <nav class="command-deck">
+      <div class="logo">🛡️ GATEWAY</div>
 
-    <!-- 数据表格 -->
-    <el-card class="box-card">
-      <el-table :data="tableData" style="width: 100%" stripe border v-loading="loading">
-        <el-table-column prop="id" label="路由 ID" width="180" />
-        <el-table-column prop="uri" label="转发目标 URI" width="200"/>
-        <el-table-column prop="order" label="优先级" width="80" align="center"/>
+      <div class="nav-items">
+        <div
+            v-for="item in menuItems"
+            :key="item.path"
+            :class="['nav-item', { active: currentPath === item.path }]"
+            @click="handleNav(item.path)"
+        >
+          <!-- 这里的图标需要你安装引入，或者暂时用文字代替 -->
+          <span>{{ item.label }}</span>
+        </div>
+      </div>
 
-        <!-- 修改后的：断言列 (显示参数) -->
-        <el-table-column label="断言 (Predicates)" min-width="250">
-          <template #default="scope">
-            <div v-for="(p, i) in scope.row.predicates" :key="i" style="margin-bottom: 5px">
-              <!-- 标签显示名字 -->
-              <el-tag size="small">{{ p.name }}</el-tag>
-              <!-- 后面跟上具体参数 -->
-              <span style="font-size: 12px; margin-left: 8px; color: #666;">
-                {{ p.args }}
-              </span>
-            </div>
-          </template>
-        </el-table-column>
+      <div class="status-indicator">
+        <span class="pulse-dot"></span>
+        <span class="status-text">ONLINE</span>
+      </div>
+    </nav>
 
-        <!-- 修改后的：过滤器列 (显示参数) -->
-        <el-table-column label="过滤器 (Filters)" min-width="250">
-          <template #default="scope">
-            <div v-for="(f, i) in scope.row.filters" :key="i" style="margin-bottom: 5px">
-              <el-tag type="warning" size="small">{{ f.name }}</el-tag>
-              <span style="font-size: 12px; margin-left: 8px; color: #666;">
-                {{ f.args }}
-              </span>
-            </div>
-          </template>
-        </el-table-column>
-
-        <el-table-column label="操作" width="150" align="center">
-          <template #default="scope">
-            <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(scope.row.id)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
-
-    <!-- 新增/编辑 弹窗 -->
-    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="600px">
-      <el-form :model="form" label-width="100px">
-        <el-form-item label="路由 ID">
-          <el-input v-model="form.id" placeholder="例如: user-service" :disabled="isEdit" />
-        </el-form-item>
-        <el-form-item label="目标 URI">
-          <el-input v-model="form.uri" placeholder="例如: lb://user-service" />
-        </el-form-item>
-        <el-form-item label="优先级">
-          <el-input-number v-model="form.order" :min="0" />
-        </el-form-item>
-
-        <!-- 简化版：这里暂时用JSON输入，后续可以做成动态表单 -->
-        <el-form-item label="断言配置">
-          <el-input
-              v-model="predicatesJson"
-              type="textarea"
-              :rows="4"
-              placeholder='JSON格式，例: [{"name":"Path","args":{"pattern":"/user/**"}}]'
-          />
-          <div class="tip">请输入标准的 JSON 数组格式</div>
-        </el-form-item>
-
-        <el-form-item label="过滤器配置">
-          <el-input
-              v-model="filtersJson"
-              type="textarea"
-              :rows="4"
-              placeholder='JSON格式，例: [{"name":"StripPrefix","args":{"parts":"1"}}]'
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitForm">确定</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    <!-- 3. 主视窗 (路由出口) -->
+    <main class="main-viewport">
+      <!-- 路由切换动画 -->
+      <router-view v-slot="{ Component }">
+        <transition name="fade-slide" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getRoutes, saveRoute, deleteRoute } from '@/api/route' // 引入我们封装的API
+import { computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
-// 数据状态
-const tableData = ref([])
-const loading = ref(false)
-const dialogVisible = ref(false)
-const dialogTitle = ref('')
-const isEdit = ref(false)
+const router = useRouter()
+const route = useRoute()
 
-// 表单数据
-const form = ref({
-  id: '',
-  uri: '',
-  order: 0,
-  predicates: [],
-  filters: []
-})
-// 为了方便编辑，这里把复杂对象转为JSON字符串处理
-const predicatesJson = ref('[]')
-const filtersJson = ref('[]')
+// 菜单配置
+const menuItems = [
+  { path: '/dashboard', label: '📊 驾驶舱' },
+  { path: '/routes', label: '🔗 路由矩阵' },
+  { path: '/sentinel', label: '🛡️ 流量防卫' },
+  { path: '/logs', label: '📜 审计日志' }
+]
 
-// 1. 获取列表
-const fetchData = async () => {
-  loading.value = true
-  try {
-    // request 工具已经帮我们剥离了外层 Result，这里直接拿到 List
-    const data = await getRoutes()
-    tableData.value = data || []
-    ElMessage.success('数据刷新成功')
-  } finally {
-    loading.value = false
-  }
+// 获取当前激活的路由路径
+const currentPath = computed(() => route.path)
+
+// 页面跳转
+const handleNav = (path) => {
+  router.push(path)
 }
-
-// 刷新按钮
-const handleRefresh = () => {
-  fetchData()
-}
-
-// 2. 删除逻辑
-const handleDelete = (id) => {
-  ElMessageBox.confirm(`确定要删除路由 [${id}] 吗?`, '警告', {
-    confirmButtonText: '确定删除',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(async () => {
-    await deleteRoute(id)
-    ElMessage.success('删除成功，网关配置已更新')
-    fetchData() // 重新加载列表
-  })
-}
-
-// 3. 新增逻辑
-const handleAdd = () => {
-  isEdit.value = false
-  dialogTitle.value = '新增路由'
-  form.value = { id: '', uri: '', order: 0 }
-  // 默认给一个 Path 断言模板
-  predicatesJson.value = JSON.stringify([{
-    name: 'Path',
-    args: { pattern: '/api/demo/**' }
-  }], null, 2)
-  filtersJson.value = '[]'
-  dialogVisible.value = true
-}
-
-// 4. 编辑逻辑
-const handleEdit = (row) => {
-  isEdit.value = true
-  dialogTitle.value = '编辑路由'
-  // 深拷贝，防止修改表单时表格跟着变
-  form.value = JSON.parse(JSON.stringify(row))
-  // 转为 JSON 字符串供编辑
-  predicatesJson.value = JSON.stringify(row.predicates || [], null, 2)
-  filtersJson.value = JSON.stringify(row.filters || [], null, 2)
-  dialogVisible.value = true
-}
-
-// 5. 提交表单
-const submitForm = async () => {
-  try {
-    // 组装数据
-    const submitData = {
-      ...form.value,
-      predicates: JSON.parse(predicatesJson.value),
-      filters: JSON.parse(filtersJson.value)
-    }
-
-    await saveRoute(submitData)
-    ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
-    dialogVisible.value = false
-    fetchData()
-  } catch (e) {
-    ElMessage.error('JSON 格式错误或网络异常，请检查输入')
-    console.error(e)
-  }
-}
-
-onMounted(() => {
-  fetchData()
-})
 </script>
 
 <style scoped>
-.app-container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+/* 全局容器 */
+.cockpit-container {
+  width: 100vw;
+  height: 100vh;
+  background-color: #0f172a;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow: hidden;
+  position: relative;
 }
-.header {
-  margin-bottom: 20px;
+
+/* 背景网格 */
+.background-grid {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-image:
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+  /* 加一点暗角，让视线聚焦中心 */
+  background: radial-gradient(circle at center, transparent 0%, #0f172a 90%);
+}
+
+.command-deck {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+
+  /* 使用 fit-content 让宽度自适应内容，但给个最小值防止太挤 */
+  width: fit-content;
+  min-width: 600px;
+  max-width: 90vw; /* 防止手机端溢出 */
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 左右分散，中间居中 */
+  gap: 40px; /* 元素之间的间距 */
+
+  padding: 12px 40px; /* 增加内边距 */
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  white-space: nowrap; /* ⚠️ 核心修复：强制不换行 */
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 按钮区域：保持之前的胶囊风格 */
+.nav-items {
   display: flex;
   gap: 10px;
 }
-.tip {
-  font-size: 12px;
-  color: #999;
-  line-height: 1.5;
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #94a3b8;
+  font-weight: 500;
 }
-.mx-1 {
-  margin-right: 5px;
-  margin-bottom: 5px;
+
+.nav-item:hover {
+  color: #e2e8f0;
+}
+
+/* 选中状态：文字发光 + 底部光条 */
+.nav-item.active {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+@keyframes slideUp {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* 状态指示器 */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: rgba(74, 222, 128, 0.1);
+  border-radius: 20px;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #4ade80;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #4ade80;
+  animation: pulse 2s infinite;
+}
+
+.status-text {
+  font-size: 12px;
+  color: #4ade80;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.main-viewport {
+  position: relative;
+  z-index: 1;
+  padding-top: 110px;
+  height: 100vh;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+/* 路由切换动画：淡入淡出 + 轻微缩放 */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+}
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
 }
 </style>

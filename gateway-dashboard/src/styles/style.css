@@ -1,0 +1,208 @@
+/*
+
+!* =========================================
+   全局重置与重型适配 (Global Reset)
+   ========================================= *!
+
+!* 引入主题变量 *!
+@import './theme.css';
+
+:root {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    !* 优化文字渲染 *!
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+
+    !* 使用纯黑/极简白背景变量 *!
+    background-color: var(--bg-body);
+    color: var(--text-main);
+
+    !* --- 核心装饰：控制台背景网格 --- *!
+    background-image:
+            linear-gradient(var(--grid-line) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 45px 45px; !* 网格大小 *!
+
+    !* 配合暗角效果，增加视觉深度 *!
+    position: relative;
+    transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+!* 增加遮罩暗角：让屏幕四周深邃，中心明亮 *!
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: var(--vignette);
+    pointer-events: none;
+    z-index: 0;
+}
+
+!* --- Element Plus 深度适配 --- *!
+
+!* 1. 表格透明化与变量绑定 *!
+.el-table,
+.el-table__expanded-cell {
+    background-color: transparent !important;
+}
+
+!* 2. 表头适配：增加黑夜模式下的质感 *!
+.el-table th.el-table__cell {
+    background-color: var(--bg-glass) !important;
+    color: var(--text-highlight) !important; !* 表头用高亮色，更专业 *!
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border-color) !important;
+}
+
+!* 3. 单元格与行：去除原生背景，改用变量边框 *!
+.el-table tr,
+.el-table td.el-table__cell {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+!* 4. 悬停效果：使用高亮色的极淡透明版，产生“激活”感 *!
+.el-table--enable-row-hover .el-table__body tr:hover > td {
+    background-color: var(--bg-glass) !important;
+    transition: background-color 0.3s ease;
+}
+
+!* 5. 输入框适配：解决黑白模式切换时的视觉断层 *!
+.el-input__wrapper {
+    background-color: var(--bg-glass) !important;
+    box-shadow: 0 0 0 1px var(--border-color) inset !important;
+    border-radius: 6px;
+}
+.el-input__inner {
+    color: var(--text-main) !important;
+}
+
+!* --- 全局滚动条美化 (适配黑色系统) --- *!
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    !* 滚动条颜色随边框变量变化，保持低调 *!
+    background: var(--border-color);
+    border-radius: 10px;
+    border: 1px solid transparent;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+!* 按钮全局圆角修正 (配合你刚才要求的方形风格) *!
+.el-button {
+    border-radius: 6px !important;
+}*/
+/* 1. 引入变量 */
+@import './theme.css';
+
+/* 2. 基础重置 */
+:root {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+
+    background-color: var(--bg-body);
+    color: var(--text-main);
+
+    /* --- 核心：背景网格绘制 --- */
+    background-image:
+            linear-gradient(var(--grid-line) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 50px 50px;
+
+    position: relative;
+}
+
+/* 3. 核心：四周暗角 (Vignette) */
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: var(--vignette);
+    pointer-events: none;
+    z-index: -1; /* 放在内容之下 */
+}
+
+/* 4. 全局过渡动画 */
+body, .command-deck, .el-card, .el-drawer, .el-dialog {
+    transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
+}
+
+/* --- Element Plus 深度适配 (极致黑风格) --- */
+
+/* 卡片去底色，改为描边 */
+.el-card {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+    box-shadow: var(--card-shadow) !important;
+}
+
+/* 表格完全透明 */
+.el-table, .el-table__expanded-cell, .el-table tr, .el-table th, .el-table td {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+/* 表格悬停高亮 */
+.el-table--enable-row-hover .el-table__body tr:hover > td {
+    background-color: var(--bg-glass) !important;
+}
+
+/* 输入框透明化 */
+.el-input__wrapper {
+    background-color: transparent !important;
+    box-shadow: 0 0 0 1px var(--border-color) inset !important;
+}
+.el-input__inner {
+    color: var(--text-main) !important;
+}
+
+/* 抽屉和弹窗 */
+.el-drawer, .el-dialog {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+}
+.el-drawer__title, .el-dialog__title {
+    color: var(--text-main) !important;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }

@@ -15,9 +15,9 @@ public class ConsumerController {
     @GetMapping("/test")
     public String test() {
         // 1. 打印 Consumer 这一层收到的数据
-        String currentUserId = UserContext.getUserId();
+        /*String currentUserId = UserContext.getUserId();
         System.out.println("====== [Consumer] 开始调用 Feign ======");
-        System.out.println("Consumer 当前 UserID: " + currentUserId);
+        System.out.println("Consumer 当前 UserID: " + currentUserId);*/
 
         // 2. 调用 Provider (此时 Feign 拦截器会工作)
         String result = providerClient.hello(); // 调用上面 Provider 的 /hello 接口

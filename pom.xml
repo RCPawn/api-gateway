@@ -37,6 +37,13 @@
     <!-- 放到这里，子模块就不用写版本号了 -->
     <dependencyManagement>
         <dependencies>
+            <!-- 全局热部署配置 -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-devtools</artifactId>
+                <scope>runtime</scope>
+                <optional>true</optional>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>

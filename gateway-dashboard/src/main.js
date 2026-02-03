@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
-import './style.css'
+import '@/styles/theme.css'
+import './styles/style.css'
 import App from './App.vue'
 import router from './router' // 👈 1. 引入路由
 

@@ -52,6 +52,13 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- 全局热部署配置 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
         <!-- 【核心区别】网关专用依赖！千万别加 starter-web！ -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

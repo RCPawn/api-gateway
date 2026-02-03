@@ -203,13 +203,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* === 基础容器 === */
 .app-container {
   padding: 30px;
   max-width: 1400px;
   margin: 0 auto;
+  background-color: var(--bg-body); /* 确保背景色同步 */
 }
 
-/* 头部容器 */
+/* === 头部容器 === */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -227,17 +229,17 @@ onMounted(() => {
 
 .title-area .icon {
   font-size: 32px;
-  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));
+  /* 使用高亮变量实现发光感 */
+  filter: drop-shadow(0 0 8px var(--text-highlight));
+  color: var(--text-highlight);
 }
 
-/* 🟢 修改 1：去掉文字渐变，回归纯白 */
 h1 {
   margin: 0;
   font-size: 24px;
-  color: #38bdf8;
+  color: var(--text-main);
   font-weight: 700;
   letter-spacing: 1px;
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* 稍微加点阴影增加可读性 */
 }
 
 /* 右侧按钮区 */
@@ -246,102 +248,121 @@ h1 {
   gap: 15px;
 }
 
-/* --- 按钮样式 --- */
+/* --- 按钮样式：使用变量进行透明度重组 --- */
 
-/* 1. 刷新按钮 */
+/* 1. 刷新按钮 (基于高亮色变量) */
 :deep(.el-button--primary.is-plain) {
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.5);
-  color: #38bdf8;
+  background: var(--bg-glass) !important;
+  border: 1px solid var(--text-highlight) !important;
+  color: var(--text-highlight) !important;
   transition: all 0.3s ease;
 }
 
 :deep(.el-button--primary.is-plain:hover) {
-  background: rgba(56, 189, 248, 0.3);
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
-  border-color: #38bdf8;
+  background: var(--text-highlight) !important;
+  color: #ffffff !important; /* 强制白色以保证对比度 */
+  box-shadow: var(--card-shadow);
   transform: translateY(-2px);
 }
 
-/* 2. 新增按钮 */
+/* 2. 新增按钮 (使用变量保持统调) */
 :deep(.el-button--success) {
-  background: rgba(74, 222, 128, 0.2);
-  border: 1px solid rgba(74, 222, 128, 0.5);
-  color: #4ade80;
-  background-image: none;
+  /* 成功按钮推荐保持绿色系，但边框和文字可微调适配全局变量感 */
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #10b981;
 }
 
 :deep(.el-button--success:hover) {
-  background: rgba(74, 222, 128, 0.4);
-  box-shadow: 0 0 15px rgba(74, 222, 128, 0.4);
-  border-color: #4ade80;
-  color: #fff;
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: var(--card-shadow);
   transform: translateY(-2px);
 }
 
-/* 🟢 修改 2：方形圆角 (6px) */
+/* 方形圆角统一 */
 :deep(.el-button) {
-  border-radius: 6px; /* 方形带一点圆角 */
-  padding: 10px 10px;
+  border-radius: 6px;
+  padding: 10px 18px;
   font-weight: 600;
-  letter-spacing: 1px;
 }
 
-/* --- 表格样式 --- */
+/* --- 表格区域样式优化 (彻底变量化) --- */
 .box-card {
-  background: rgba(30, 41, 59, 0.5) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 12px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--card-shadow);
 }
 
 :deep(.el-table) {
   background-color: transparent !important;
-  color: #cbd5e1 !important;
-  --el-table-border-color: rgba(255, 255, 255, 0.1);
-  --el-table-row-hover-bg-color: rgba(56, 189, 248, 0.1) !important;
+  color: var(--text-main) !important; /* 主文字颜色 */
+  --el-table-border-color: var(--border-color);
+  --el-table-header-bg-color: var(--bg-glass);
+  --el-table-row-hover-bg-color: var(--bg-glass) !important;
 }
 
+/* 表头颜色：使用高亮色变量 */
 :deep(.el-table th.el-table__cell) {
-  background-color: rgba(15, 23, 42, 0.6) !important;
-  color: #38bdf8 !important;
+  background-color: var(--bg-glass) !important;
+  color: var(--text-highlight) !important;
   font-weight: bold;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 2px solid var(--border-color) !important;
 }
 
-:deep(.el-table tr), :deep(.el-table td.el-table__cell) {
+/* 表格行与单元格 */
+:deep(.el-table tr),
+:deep(.el-table td.el-table__cell) {
   background-color: transparent !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
-/* 🟢 修改 3：强制操作列不换行 */
+/* 单元格文字颜色适配 */
 :deep(.el-table .cell) {
-  white-space: nowrap; /* 关键！防止按钮挤下去 */
+  white-space: nowrap;
+  color: var(--text-main);
 }
 
-/* 标签样式 */
+/* --- 标签样式 --- */
 :deep(.el-tag) {
-  background-color: rgba(56, 189, 248, 0.15);
-  border-color: rgba(56, 189, 248, 0.3);
-  color: #7dd3fc;
+  background-color: var(--bg-glass) !important;
+  border: 1px solid var(--border-color);
+  color: var(--text-highlight);
 }
+
+/* 警告标签：由于变量里没定义警告色，采用 rgba 模拟并绑定变量感 */
 :deep(.el-tag--warning) {
-  background-color: rgba(251, 191, 36, 0.15);
-  border-color: rgba(251, 191, 36, 0.3);
-  color: #fcd34d;
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
 }
 
-/* 操作按钮文字 */
-:deep(.el-button--text) {
-  color: #38bdf8;
-}
-:deep(.el-button--text:hover) {
-  color: #7dd3fc;
+/* 操作列文字按钮 */
+:deep(.el-button--text),
+:deep(.el-button.is-text) {
+  color: var(--text-highlight) !important;
+  font-weight: bold;
 }
 
+:deep(.el-button--text:hover),
+:deep(.el-button.is-text:hover) {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* 辅助说明文字 */
 .tip {
   font-size: 12px;
-  color: #999;
+  color: var(--text-secondary);
   line-height: 1.5;
+  margin-top: 10px;
+}
+
+/* 适配深色模式下的表格斑马纹或特殊背景 */
+html.dark :deep(.el-table) {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
 }
 </style>

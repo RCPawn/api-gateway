@@ -27,9 +27,9 @@ public class HelloController {
         // 2. 从 Header 直接获取（验证 Feign 是否传了 Token）
         String tokenHeader = request.getHeader("Authorization");
 
-        System.out.println("====== [Provider] 收到请求 ======");
+        /*System.out.println("====== [Provider] 收到请求 ======");
         System.out.println("当前线程 UserID: " + userId);
-        System.out.println("收到 Authorization 头: " + tokenHeader);
+        System.out.println("收到 Authorization 头: " + tokenHeader);*/
 
         return "Provider 响应: 你好，用户 " + userId + "，我是后端服务，我的端口是：" + port;
     }

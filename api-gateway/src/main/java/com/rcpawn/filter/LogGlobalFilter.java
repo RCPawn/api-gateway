@@ -12,14 +12,25 @@ import reactor.core.publisher.Mono;
 
 import java.util.Date;
 
-@Component
+//@Component
 public class LogGlobalFilter implements GlobalFilter, Ordered {
 
-    @Autowired
+//    @Autowired
     private RabbitTemplate rabbitTemplate;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        String path = exchange.getRequest().getURI().getPath();
+        // 黑名单逻辑
+        // 如果是查日志的接口，或者是 Swagger 文档，或者是网关管理接口，统统不记录
+        if (path.contains("/log/") ||
+                path.contains("/doc.html") ||
+                path.contains("/v3/api-docs") ||
+                path.contains("/admin/")) {
+            // 直接放行，不走后面的“记录逻辑”
+            return chain.filter(exchange);
+        }
+
         // 1. 记录开始时间
         long startTime = System.currentTimeMillis();
 
@@ -41,7 +52,8 @@ public class LogGlobalFilter implements GlobalFilter, Ordered {
             // 4. 发送 MQ (异步)
             try {
                 rabbitTemplate.convertAndSend("gateway_log_queue", log);
-                System.out.println("✅ [网关] 异步日志已发送 MQ: " + log.getPath());
+//                Thread.sleep(50);
+//                System.out.println("✅ [网关] 异步日志已发送 MQ: " + log.getPath());
             } catch (Exception e) {
                 System.err.println("❌ [网关] 日志发送失败: " + e.getMessage());
             }

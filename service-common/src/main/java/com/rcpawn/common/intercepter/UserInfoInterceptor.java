@@ -22,7 +22,7 @@ public class UserInfoInterceptor implements HandlerInterceptor {
             UserContext.setToken(token);
         }
 
-        System.out.println("Header -> ThreadLocal");
+//        System.out.println("Header -> ThreadLocal");
         
         return true;
     }

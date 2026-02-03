@@ -77,7 +77,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         ServerHttpRequest newRequest = requestBuilder.build();
 
         // 放行
-        System.out.println("Token 校验通过");
+//        System.out.println("Token 校验通过");
         return chain.filter(exchange.mutate().request(newRequest).build());
     }
 

@@ -1,11 +1,15 @@
 <template>
+  <!-- 最外层容器 -->
   <div class="cockpit-container">
-    <!-- 1. 背景层 -->
-    <div class="background-grid"></div>
 
-    <!-- 2. 顶部悬浮指挥台 -->
+    <!-- ❌ 已删除 .background-layer，样式已移交 style.css 接管 -->
+
+    <!-- 1. 悬浮指挥台 (导航栏) -->
     <nav class="command-deck">
-      <div class="logo">🛡️ GATEWAY</div>
+      <div class="logo-area">
+        <span class="logo-icon">🛡️</span>
+        <span class="logo-text">GATEWAY</span>
+      </div>
 
       <div class="nav-items">
         <div
@@ -14,23 +18,31 @@
             :class="['nav-item', { active: currentPath === item.path }]"
             @click="handleNav(item.path)"
         >
-          <!-- 这里的图标需要你安装引入，或者暂时用文字代替 -->
-          <span>{{ item.label }}</span>
+          {{ item.label }}
         </div>
       </div>
 
-      <div class="status-indicator">
-        <span class="pulse-dot"></span>
-        <span class="status-text">ONLINE</span>
+      <div class="right-actions">
+        <el-button circle text @click="toggleTheme" class="theme-btn">
+          <el-icon :size="20">
+            <component :is="isDark ? Moon : Sunny" />
+          </el-icon>
+        </el-button>
+
+        <div class="status-badge">
+          <span class="pulse-dot"></span>
+          <span>ONLINE</span>
+        </div>
       </div>
     </nav>
 
-    <!-- 3. 主视窗 (路由出口) -->
+    <!-- 2. 主视窗 -->
     <main class="main-viewport">
-      <!-- 路由切换动画 -->
       <router-view v-slot="{ Component }">
-        <transition name="fade-slide" mode="out-in">
-          <component :is="Component" />
+        <transition name="page-flip" mode="out-in">
+          <div :key="route.path" class="view-wrapper">
+            <component :is="Component" />
+          </div>
         </transition>
       </router-view>
     </main>
@@ -40,11 +52,13 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { Sunny, Moon } from '@element-plus/icons-vue'
+import { useTheme } from '@/utils/theme'
 
+const { isDark, toggleTheme } = useTheme()
 const router = useRouter()
 const route = useRoute()
 
-// 菜单配置
 const menuItems = [
   { path: '/dashboard', label: '📊 驾驶舱' },
   { path: '/routes', label: '🔗 路由矩阵' },
@@ -52,166 +66,136 @@ const menuItems = [
   { path: '/logs', label: '📜 审计日志' }
 ]
 
-// 获取当前激活的路由路径
 const currentPath = computed(() => route.path)
 
-// 页面跳转
 const handleNav = (path) => {
-  router.push(path)
+  if (currentPath.value !== path) {
+    router.push(path)
+  }
 }
 </script>
 
 <style scoped>
-/* 全局容器 */
+/* App.vue 现在只负责布局定位，颜色全靠 style.css */
+
 .cockpit-container {
   width: 100vw;
   height: 100vh;
-  background-color: #0f172a;
-  color: #e2e8f0;
-  font-family: 'Inter', system-ui, sans-serif;
-  overflow: hidden;
   position: relative;
+  background: transparent; /* 透明，透出 body 的背景 */
 }
 
-/* 背景网格 */
-.background-grid {
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background-image:
-      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  pointer-events: none;
-  z-index: 0;
-  /* 加一点暗角，让视线聚焦中心 */
-  background: radial-gradient(circle at center, transparent 0%, #0f172a 90%);
-}
-
+/* === 导航栏 === */
 .command-deck {
   position: absolute;
-  top: 20px;
+  top: 24px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
 
-  /* 使用 fit-content 让宽度自适应内容，但给个最小值防止太挤 */
-  width: fit-content;
-  min-width: 600px;
-  max-width: 90vw; /* 防止手机端溢出 */
-
   display: flex;
   align-items: center;
-  justify-content: space-between; /* 左右分散，中间居中 */
-  gap: 40px; /* 元素之间的间距 */
+  justify-content: space-between;
+  gap: 40px;
 
-  padding: 12px 40px; /* 增加内边距 */
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 50px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  padding: 0.8rem 2rem;
+  width: auto;
+  min-width: 650px;
 
-  white-space: nowrap; /* ⚠️ 核心修复：强制不换行 */
+  background-color: var(--bg-header); /* 跟随主题 */
+  backdrop-filter: blur(12px) saturate(180%); /* 磨砂玻璃 */
+
+  border: 1px solid var(--border-color);
+  border-radius: 99px;
+  box-shadow: var(--card-shadow);
+
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.logo {
-  font-size: 18px;
+/* Logo */
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 800;
-  letter-spacing: 3px;
-  color: #fff;
-  text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  letter-spacing: 2px;
+  color: var(--text-main);
+}
+.logo-text {
+  /* 文字渐变：在浅色模式是 黑->蓝，深色模式是 白->白 */
+  background: linear-gradient(135deg, var(--text-main), var(--text-highlight));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-/* 按钮区域：保持之前的胶囊风格 */
-.nav-items {
-  display: flex;
-  gap: 10px;
-}
-
+/* 菜单项 */
+.nav-items { display: flex; gap: 8px; }
 .nav-item {
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+.nav-item:hover {
+  background: var(--bg-glass);
+  color: var(--text-main);
+}
+.nav-item.active {
+  background: var(--text-main); /* 选中变为前景色 */
+  color: var(--bg-body); /* 文字变为背景色 (反色效果) */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 右侧按钮 */
+.right-actions { display: flex; align-items: center; gap: 15px; }
+.theme-btn { color: var(--text-secondary) !important; }
+.theme-btn:hover { color: var(--text-highlight) !important; }
+
+/* 在线状态 */
+.status-badge {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 20px;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: #94a3b8;
-  font-weight: 500;
+  padding: 4px 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 12px;
+  font-size: 12px;
+  color: #10b981;
+  font-weight: 700;
 }
-
-.nav-item:hover {
-  color: #e2e8f0;
-}
-
-/* 选中状态：文字发光 + 底部光条 */
-.nav-item.active {
-  background: rgba(56, 189, 248, 0.2);
-  color: #38bdf8;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
-}
-
-@keyframes slideUp {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-
-/* 状态指示器 */
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 12px;
-  background: rgba(74, 222, 128, 0.1);
-  border-radius: 20px;
-  border: 1px solid rgba(74, 222, 128, 0.2);
-}
-
 .pulse-dot {
   width: 6px;
   height: 6px;
-  background-color: #4ade80;
+  background: #10b981;
   border-radius: 50%;
-  box-shadow: 0 0 8px #4ade80;
+  box-shadow: 0 0 8px #10b981;
   animation: pulse 2s infinite;
 }
 
-.status-text {
-  font-size: 12px;
-  color: #4ade80;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
-}
-
+/* === 视窗与动画 === */
 .main-viewport {
   position: relative;
   z-index: 1;
-  padding-top: 110px;
+  padding-top: 100px;
   height: 100vh;
   box-sizing: border-box;
   overflow-y: auto;
+  overflow-x: hidden;
 }
+.view-wrapper { width: 100%; height: 100%; }
 
-/* 路由切换动画：淡入淡出 + 轻微缩放 */
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.fade-slide-enter-from {
-  opacity: 0;
-  transform: translateY(10px) scale(0.98);
-}
-.fade-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-10px) scale(0.98);
+/* 翻页动画 */
+.page-flip-enter-active { transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.page-flip-leave-active { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.page-flip-enter-from { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(10px); }
+.page-flip-leave-to { opacity: 0; transform: translateY(-30px) scale(0.95); filter: blur(10px); }
+
+@keyframes pulse {
+  0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; }
 }
 </style>

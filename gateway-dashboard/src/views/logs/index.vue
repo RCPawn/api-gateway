@@ -151,6 +151,7 @@ onMounted(() => {
   padding: 30px;
   max-width: 1400px;
   margin: 0 auto;
+  background-color: var(--bg-body); /* 确保背景同步 */
 }
 
 .page-header {
@@ -161,9 +162,10 @@ onMounted(() => {
 }
 
 h1 {
-  color: #fff;
+  color: var(--text-main);
   font-size: 24px;
-  text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+  /* 发光效果适配高亮变量 */
+  text-shadow: 0 0 10px rgba(var(--text-highlight), 0.3);
 }
 
 .filter-box {
@@ -174,23 +176,25 @@ h1 {
   width: 300px;
 }
 
-/* 玻璃卡片 */
+/* 玻璃卡片：去掉写死的深色，改用变量 */
 .glass-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: var(--bg-header); /* 使用全局透明背景变量 */
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(12px) saturate(180%);
   border-radius: 12px;
+  box-shadow: var(--card-shadow);
 }
 
-/* 状态小圆点 */
+/* 状态小圆点：保持业务色，但背景适配变量感 */
 .status-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 20px;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 13px;
+  border: 1px solid transparent;
 }
 .status-badge .dot {
   width: 6px;
@@ -198,15 +202,27 @@ h1 {
   border-radius: 50%;
 }
 
-/* 状态颜色定义 */
-.success { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
-.success .dot { background: #4ade80; box-shadow: 0 0 5px #4ade80; }
+/* 业务状态颜色：利用变量混合或保留明确的语义色 */
+.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+.success .dot { background: #10b981; box-shadow: 0 0 6px #10b981; }
 
-.warning { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
-.warning .dot { background: #fbbf24; box-shadow: 0 0 5px #fbbf24; }
+.warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+.warning .dot { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
 
-.error { background: rgba(248, 113, 113, 0.15); color: #f87171; }
-.error .dot { background: #f87171; box-shadow: 0 0 5px #f87171; }
+.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+.error .dot { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
 
 .pagination-container {
   margin-top: 20px;
@@ -214,19 +230,48 @@ h1 {
   justify-content: flex-end;
 }
 
-/* 强制覆盖 Element 表格样式 (黑夜模式) */
+/* 强制覆盖 Element 表格样式 (适配全主题) */
 :deep(.el-table) {
   background-color: transparent !important;
-  color: #e2e8f0;
-  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.05);
-  --el-table-border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-main); /* 正文使用主色 */
+  --el-table-row-hover-bg-color: var(--bg-glass) !important;
+  --el-table-border-color: var(--border-color);
 }
-:deep(.el-table th), :deep(.el-table tr), :deep(.el-table td) {
+
+:deep(.el-table th.el-table__cell) {
+  background-color: var(--bg-glass) !important;
+  color: var(--text-highlight) !important; /* 表头高亮 */
+  font-weight: bold;
+}
+
+:deep(.el-table tr),
+:deep(.el-table td.el-table__cell) {
   background-color: transparent !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
+
+/* 输入框适配 */
 :deep(.el-input__wrapper) {
-  background-color: rgba(0, 0, 0, 0.2);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  background-color: var(--bg-glass) !important;
+  box-shadow: 0 0 0 1px var(--border-color) inset !important;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--text-highlight) inset !important;
+}
+
+:deep(.el-input__inner) {
+  color: var(--text-main) !important;
+}
+
+/* 分页组件适配 (可选) */
+:deep(.el-pagination button) {
+  background-color: transparent !important;
+  color: var(--text-secondary) !important;
+}
+:deep(.el-pagination .is-active) {
+  color: var(--text-highlight) !important;
+  font-weight: bold;
 }
 </style>

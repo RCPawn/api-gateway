@@ -1,277 +1,340 @@
 <template>
   <div class="app-container">
-    <div class="page-header">
-      <h1>📜 审计日志 (Audit Logs)</h1>
-      <!-- 搜索栏 -->
-      <div class="filter-box">
-        <el-input
-            v-model="queryParams.path"
-            placeholder="搜索请求路径..."
-            prefix-icon="Search"
-            clearable
-            @clear="handleSearch"
-            @keyup.enter="handleSearch"
-            class="search-input"
-        />
-        <el-button type="primary" @click="handleSearch">查询</el-button>
+    <div class="stats-overview">
+      <div class="stat-item">
+        <div class="stat-label">请求总数</div>
+        <div class="stat-value">{{ total }}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">异常率</div>
+        <div class="stat-value warn">2.4%</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">平均响应时间</div>
+        <div class="stat-value highlight">124ms</div>
       </div>
     </div>
 
-    <!-- 日志表格 -->
-    <el-card class="glass-card">
+    <div class="action-bar">
+      <div class="bar-left">
+        <h2 class="page-title">
+          <el-icon><Document /></el-icon> 审计日志
+        </h2>
+      </div>
+
+      <div class="bar-right">
+        <div class="search-box">
+          <el-input
+              v-model="queryParams.path"
+              placeholder="搜索请求路径..."
+              clearable
+              class="glass-input"
+              @clear="handleSearch"
+              @keyup.enter="handleSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+
+        <div class="btn-group">
+          <el-button type="primary" plain class="glass-btn" @click="handleSearch">
+            <el-icon><Filter /></el-icon> 筛选查询
+          </el-button>
+          <el-button type="primary" class="glow-btn" @click="fetchData">
+            <el-icon><Refresh /></el-icon> 刷新同步
+          </el-button>
+        </div>
+      </div>
+    </div>
+
+    <div class="log-table-wrapper" v-loading="loading">
       <el-table
           :data="tableData"
           style="width: 100%"
-          v-loading="loading"
-          element-loading-background="rgba(0, 0, 0, 0.5)"
+          class="custom-table"
+          :header-cell-style="{ background: 'transparent' }"
       >
-        <!-- 状态码 (带颜色小圆点) -->
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column prop="status" label="状态" width="120">
           <template #default="scope">
-            <div class="status-badge" :class="getStatusClass(scope.row.status)">
+            <div class="status-glow-badge" :class="getStatusClass(scope.row.status)">
               <span class="dot"></span>
-              {{ scope.row.status }}
+              <span class="code">{{ scope.row.status }}</span>
             </div>
           </template>
         </el-table-column>
 
         <el-table-column prop="method" label="方法" width="100">
           <template #default="scope">
-            <el-tag :type="getMethodType(scope.row.method)">{{ scope.row.method }}</el-tag>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="path" label="请求路径" min-width="250" show-overflow-tooltip />
-
-        <el-table-column prop="ip" label="来源 IP" width="140" />
-
-        <el-table-column prop="userId" label="操作人" width="120">
-          <template #default="scope">
-            <span style="color: #a5f3fc">{{ scope.row.userId || '游客' }}</span>
-          </template>
-        </el-table-column>
-
-        <!-- 耗时 (慢请求标红) -->
-        <el-table-column prop="responseTime" label="耗时" width="120" sortable>
-          <template #default="scope">
-            <span :style="{ color: scope.row.responseTime > 500 ? '#f87171' : '#4ade80' }">
-              {{ scope.row.responseTime }} ms
+            <span class="method-text" :class="scope.row.method.toLowerCase()">
+              {{ scope.row.method }}
             </span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="requestTime" label="请求时间" width="180">
+        <el-table-column prop="path" label="请求路径" min-width="300">
           <template #default="scope">
-            {{ formatTime(scope.row.requestTime) }}
+            <code class="path-code">{{ scope.row.path }}</code>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="ip" label="来源 IP" width="150">
+          <template #default="scope">
+            <span class="ip-address">{{ scope.row.ip }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="userId" label="操作人" width="120">
+          <template #default="scope">
+            <div class="user-chip">
+              <el-avatar :size="20" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
+              <span>{{ scope.row.userId || '游客' }}</span>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="responseTime" label="耗时" width="120" sortable>
+          <template #default="scope">
+            <div class="time-tag" :class="{ 'slow': scope.row.responseTime > 500 }">
+              <el-icon><Timer /></el-icon>
+              {{ scope.row.responseTime }}ms
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="requestTime" label="时间" width="200">
+          <template #default="scope">
+            <span class="time-stamp">{{ formatTime(scope.row.requestTime) }}</span>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- 分页组件 -->
       <div class="pagination-container">
         <el-pagination
             v-model:current-page="queryParams.page"
             v-model:page-size="queryParams.size"
             :page-sizes="[10, 20, 50]"
-            layout="total, sizes, prev, pager, next, jumper"
+            layout="total, sizes, prev, pager, next"
             :total="total"
             @size-change="handleSearch"
             @current-change="fetchData"
-            background
         />
       </div>
-    </el-card>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { getLogList } from '@/api/log'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Refresh, Filter, Document, Timer } from '@element-plus/icons-vue'
 
-// 数据状态
 const tableData = ref([])
 const total = ref(0)
 const loading = ref(false)
 
-// 查询参数
 const queryParams = reactive({
   page: 1,
   size: 10,
   path: ''
 })
 
-// 获取数据
 const fetchData = async () => {
   loading.value = true
   try {
     const res = await getLogList(queryParams)
-    // 根据后端返回结构调整，假设是 { records: [], total: 100 }
-    tableData.value = res.records
-    total.value = res.total
+    tableData.value = res.records || []
+    total.value = res.total || 0
   } catch (error) {
-    // 错误处理已在拦截器做过，这里可忽略
+    console.error(error)
   } finally {
     loading.value = false
   }
 }
 
-// 搜索按钮
 const handleSearch = () => {
-  queryParams.page = 1 // 重置到第一页
+  queryParams.page = 1
   fetchData()
 }
 
-// 辅助函数：状态码样式
 const getStatusClass = (status) => {
-  if (status >= 200 && status < 300) return 'success'
-  if (status >= 400 && status < 500) return 'warning'
-  return 'error'
+  if (status >= 200 && status < 300) return 's-success'
+  if (status >= 400 && status < 500) return 's-warning'
+  return 's-error'
 }
 
-// 辅助函数：Method 标签颜色
-const getMethodType = (method) => {
-  const map = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger' }
-  return map[method] || 'info'
-}
-
-// 辅助函数：简单时间格式化
 const formatTime = (isoStr) => {
   if (!isoStr) return ''
-  return new Date(isoStr).toLocaleString()
+  const date = new Date(isoStr)
+  return `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`
 }
 
-onMounted(() => {
-  fetchData()
-})
+onMounted(fetchData)
 </script>
 
 <style scoped>
 .app-container {
-  padding: 30px;
-  max-width: 1400px;
-  margin: 0 auto;
-  background-color: var(--bg-body); /* 确保背景同步 */
+  padding: 20px 40px;
+  background-color: var(--bg-body);
 }
 
-.page-header {
+/* 顶部统计组件 */
+.stats-overview {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-item {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 20px;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+.stat-value { font-size: 24px; font-weight: 700; color: var(--text-main); }
+.stat-value.highlight { color: var(--text-highlight); }
+.stat-value.warn { color: #f43f5e; }
+
+/* 操作栏对齐 */
+.action-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
+  margin-bottom: 24px;
 }
 
-h1 {
+.page-title {
+  font-size: 20px;
   color: var(--text-main);
-  font-size: 24px;
-  /* 发光效果适配高亮变量 */
-  text-shadow: 0 0 10px rgba(var(--text-highlight), 0.3);
-}
-
-.filter-box {
   display: flex;
+  align-items: center;
   gap: 10px;
-}
-.search-input {
-  width: 300px;
+  margin: 0;
 }
 
-/* 玻璃卡片：去掉写死的深色，改用变量 */
-.glass-card {
-  background: var(--bg-header); /* 使用全局透明背景变量 */
+.bar-right { display: flex; align-items: center; gap: 16px; }
+
+.search-box { width: 240px; transition: all 0.3s ease; }
+.search-box:focus-within { width: 320px; }
+
+:deep(.glass-input .el-input__wrapper) {
+  background-color: var(--bg-glass);
+  box-shadow: 0 0 0 1px var(--border-color) inset;
+  border-radius: 10px;
+  height: 38px;
+}
+
+.glass-btn {
+  background: var(--bg-glass) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-main) !important;
+  border-radius: 8px;
+}
+
+.glow-btn {
+  background: var(--text-highlight) !important;
+  border: none !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+  color: #fff;
+}
+
+/* 表格深度定制 */
+.log-table-wrapper {
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
-  backdrop-filter: blur(12px) saturate(180%);
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
+  border-radius: 16px;
+  padding: 10px;
+  backdrop-filter: blur(10px);
 }
 
-/* 状态小圆点：保持业务色，但背景适配变量感 */
-.status-badge {
+:deep(.custom-table) {
+  background: transparent !important;
+  --el-table-border-color: var(--border-color);
+  --el-table-header-text-color: var(--text-highlight);
+  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.05);
+}
+
+:deep(.el-table__row) { background: transparent !important; }
+:deep(.el-table__cell) { border-bottom: 1px solid var(--border-color) !important; }
+
+/* 状态 Badge */
+.status-glow-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 4px 12px;
-  border-radius: 20px;
-  font-weight: 600;
+  border-radius: 8px;
   font-size: 13px;
-  border: 1px solid transparent;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.05);
 }
-.status-badge .dot {
+
+.status-glow-badge .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
 }
 
-/* 业务状态颜色：利用变量混合或保留明确的语义色 */
-.success {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.2);
-}
-.success .dot { background: #10b981; box-shadow: 0 0 6px #10b981; }
+.s-success { color: #10b981; }
+.s-success .dot { background: #10b981; box-shadow: 0 0 8px #10b981; }
 
-.warning {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.2);
-}
-.warning .dot { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+.s-warning { color: #f59e0b; }
+.s-warning .dot { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
 
-.error {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.2);
-}
-.error .dot { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+.s-error { color: #f43f5e; }
+.s-error .dot { background: #f43f5e; box-shadow: 0 0 8px #f43f5e; }
 
+/* 方法类型字体 */
+.method-text { font-weight: 800; font-size: 12px; }
+.method-text.post { color: #10b981; }
+.method-text.get { color: var(--text-highlight); }
+.method-text.delete { color: #f43f5e; }
+
+/* 路径与用户 */
+.path-code {
+  background: rgba(0,0,0,0.3);
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a5f3fc;
+  font-size: 13px;
+}
+
+/* 时间与耗时 */
+.time-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #4ade80;
+}
+.time-tag.slow { color: #f87171; font-weight: bold; }
+
+.time-stamp { color: var(--text-secondary); font-size: 12px; }
+
+/* 分页适配 */
 .pagination-container {
   margin-top: 20px;
+  padding: 10px;
   display: flex;
   justify-content: flex-end;
 }
 
-/* 强制覆盖 Element 表格样式 (适配全主题) */
-:deep(.el-table) {
-  background-color: transparent !important;
-  color: var(--text-main); /* 正文使用主色 */
-  --el-table-row-hover-bg-color: var(--bg-glass) !important;
-  --el-table-border-color: var(--border-color);
-}
-
-:deep(.el-table th.el-table__cell) {
-  background-color: var(--bg-glass) !important;
-  color: var(--text-highlight) !important; /* 表头高亮 */
-  font-weight: bold;
-}
-
-:deep(.el-table tr),
-:deep(.el-table td.el-table__cell) {
-  background-color: transparent !important;
-  border-bottom: 1px solid var(--border-color) !important;
-}
-
-/* 输入框适配 */
-:deep(.el-input__wrapper) {
-  background-color: var(--bg-glass) !important;
-  box-shadow: 0 0 0 1px var(--border-color) inset !important;
-  transition: all 0.3s ease;
-}
-
-:deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px var(--text-highlight) inset !important;
-}
-
-:deep(.el-input__inner) {
-  color: var(--text-main) !important;
-}
-
-/* 分页组件适配 (可选) */
-:deep(.el-pagination button) {
-  background-color: transparent !important;
-  color: var(--text-secondary) !important;
-}
-:deep(.el-pagination .is-active) {
-  color: var(--text-highlight) !important;
-  font-weight: bold;
-}
+:deep(.el-pagination button) { background: transparent !important; color: var(--text-main) !important; }
+:deep(.el-pagination .el-pager li) { background: transparent !important; color: var(--text-secondary); }
+:deep(.el-pagination .el-pager li.is-active) { color: var(--text-highlight) !important; font-weight: 900; }
 </style>

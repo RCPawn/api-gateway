@@ -1,13 +1,10 @@
 <template>
   <!-- 最外层容器 -->
   <div class="cockpit-container">
-
-    <!-- ❌ 已删除 .background-layer，样式已移交 style.css 接管 -->
-
     <!-- 1. 悬浮指挥台 (导航栏) -->
     <nav class="command-deck">
       <div class="logo-area">
-        <span class="logo-icon">🛡️</span>
+        <span class="logo-icon">📍</span>
         <span class="logo-text">GATEWAY</span>
       </div>
 

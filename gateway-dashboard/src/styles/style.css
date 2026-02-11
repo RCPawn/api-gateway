@@ -81,3 +81,59 @@ body, .command-deck, .el-card, .el-drawer, .el-dialog {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ===== MessageBox 容器 ===== */
+.cyber-message-box {
+    background: var(--bg-card) !important;
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+    backdrop-filter: var(--glass-backdrop);
+}
+
+/* 标题 */
+.cyber-message-box .el-message-box__title {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+/* 内容 */
+.cyber-message-box .el-message-box__content {
+    color: var(--text-secondary);
+}
+
+/* 关闭按钮 */
+.cyber-message-box .el-message-box__headerbtn {
+    color: var(--text-secondary);
+}
+
+.confirm-danger-btn {
+    background: var(--cyber-danger) !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 0 12px rgba(239,68,68,.3);
+    transition: all .25s ease;
+}
+
+.confirm-danger-btn:hover {
+    background: var(--cyber-danger) !important;
+    transform: translateY(-1px);
+    box-shadow: var(--btn-hover-danger-shadow);
+}
+
+.cancel-btn {
+    background: var(--btn-base-bg) !important;
+    border: 1px solid var(--btn-base-border) !important;
+    color: var(--btn-base-text) !important;
+    box-shadow: var(--btn-base-shadow);
+}
+
+.cancel-btn:hover {
+    border-color: var(--cyber-primary);
+    box-shadow: var(--btn-hover-primary-shadow);
+}
+
+.v-modal {
+    background: rgba(0,0,0,0.45) !important;
+    backdrop-filter: blur(4px);
+}

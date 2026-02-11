@@ -83,7 +83,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Knife4j 聚合别人的 api 文档 -->
+        <!-- Knife4j 聚合别的 api 文档 -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
             <artifactId>knife4j-gateway-spring-boot-starter</artifactId>
@@ -101,6 +101,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.83</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.83</version>
         </dependency>
 
         <!-- 响应式 Redis 依赖 (Gateway 是 WebFlux，必须用 reactive 版本) -->

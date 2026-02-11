@@ -5,15 +5,17 @@
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
     </TestPlan>
     <hashTree>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group">
-        <intProp name="ThreadGroup.num_threads">50</intProp>
-        <intProp name="ThreadGroup.ramp_time">3</intProp>
+        <intProp name="ThreadGroup.num_threads">30</intProp>
+        <intProp name="ThreadGroup.ramp_time">5</intProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">100</stringProp>
+          <intProp name="LoopController.loops">-1</intProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
@@ -31,7 +33,7 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="token" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI4ODgiLCJleHAiOjE3NjkyNTg5MjEsImlhdCI6MTc2OTE3MjUyMSwidXNlcm5hbWUiOiJBZG1pbiJ9._sC6yHRmGVeq80zW37DhUIMi7wjeKcx-4FRUPwDzNLaGFjL0OEd9pC_h8tySR0AKEbZmOTWczqAZr-NmH0j5dQ</stringProp>
+                <stringProp name="Argument.value">eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI4ODgiLCJleHAiOjE3NzA4OTI5NzQsImlhdCI6MTc3MDgwNjU3NCwidXNlcm5hbWUiOiJBZG1pbiJ9.D3zZbwr1K22eMQ8h_rTh3-wRKkDqpydqjqv1ZfXelCvpHHW4N96vy8Fv2CcCwUkGSxSP8ZfjMfW9Cp-cEeYjoA</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
                 <boolProp name="HTTPArgument.use_equals">true</boolProp>
                 <stringProp name="Argument.name">token</stringProp>

@@ -83,6 +83,12 @@ knife4j:
         context-path: /service-provider
         order: 3
 
+      - name: 日志服务 (Log)
+        url: /service-log/v3/api-docs
+        service-name: service-log
+        context-path: /service-log
+        order: 4
+
 management:  #【监控探针】
   endpoints:
     web:
@@ -91,3 +97,7 @@ management:  #【监控探针】
   endpoint:
     health:
       show-details: always
+
+skywalking:
+  oap:
+    url: http://localhost:12800  # SkyWalking OAP 地址

@@ -8,3 +8,10 @@ export function getLogList(params) {
         params
     })
 }
+
+export function getRecentLogs() {
+    return request({
+        url: '/dashboard/metrics/logs',
+        method: 'get'
+    })
+}

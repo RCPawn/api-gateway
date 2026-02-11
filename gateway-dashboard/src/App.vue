@@ -1,6 +1,8 @@
 <template>
   <!-- 最外层容器 -->
   <div class="cockpit-container">
+    <MouseCursor />
+
     <!-- 1. 悬浮指挥台 (导航栏) -->
     <nav class="command-deck">
       <div class="logo-area">
@@ -51,6 +53,7 @@ import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Sunny, Moon } from '@element-plus/icons-vue'
 import { useTheme } from '@/utils/theme'
+import MouseCursor from '@/components/MouseCursor.vue'
 
 const { isDark, toggleTheme } = useTheme()
 const router = useRouter()
@@ -73,13 +76,18 @@ const handleNav = (path) => {
 </script>
 
 <style scoped>
+@media (hover: hover) {
+  /* 强制所有元素继承 html 的自定义鼠标 */
+  body, a, button, .clickable {
+    cursor: inherit !important;
+  }
+}
 /* App.vue 现在只负责布局定位，颜色全靠 style.css */
-
 .cockpit-container {
   width: 100vw;
   height: 100vh;
   position: relative;
-  background: transparent; /* 透明，透出 body 的背景 */
+  background-color: var(--bg-body);
 }
 
 /* === 导航栏 === */
@@ -115,14 +123,19 @@ const handleNav = (path) => {
   align-items: center;
   gap: 8px;
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   color: var(--text-main);
 }
+
 .logo-text {
-  /* 文字渐变：在浅色模式是 黑->蓝，深色模式是 白->白 */
-  background: linear-gradient(135deg, var(--text-main), var(--text-highlight));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-main);
+  font-weight: 700; /* 加粗 */
+}
+
+html.dark .logo-text {
+  color: var(--text-highlight);
+  /* 暗黑模式下Logo蓝更醒目，可保留加粗 */
+  font-weight: 600;
 }
 
 /* 菜单项 */

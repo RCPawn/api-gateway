@@ -7,6 +7,8 @@
     --bg-header: rgba(244, 244, 245, 0.8);
     --bg-glass: rgba(255, 255, 255, 0.7);
 
+    --primary-color: #3b82f6;
+
     --text-main: #18181b;
     --text-secondary: #71717a;
     --text-highlight: #000000;
@@ -16,6 +18,49 @@
 
     --grid-line: rgba(0, 0, 0, 0.04);
     --vignette: radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.03) 100%);
+
+    /* =========================================
+       🎨 赛博朋克色彩系统 - 浅色模式
+       ========================================= */
+    --cyber-primary: #0ea5e9;       /* 科技蓝 */
+    --cyber-warning: #f59e0b;       /* 警告橙 */
+    --cyber-danger: #ef4444;        /* 危险红 */
+    --cyber-success: #10b981;       /* 成功绿 */
+    --cyber-info: #60a5fa;          /* 信息蓝 */
+
+    /* 按钮配色 - 浅色模式 */
+    --btn-base-bg: #ffffff;
+    --btn-base-border: #e4e4e7;
+    --btn-base-text: #18181b;
+    --btn-base-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+    --btn-hover-primary-bg: rgba(14, 165, 233, 0.1);
+    --btn-hover-primary-border: #0ea5e9;
+    --btn-hover-primary-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+
+    --btn-hover-warning-bg: rgba(245, 158, 11, 0.1);
+    --btn-hover-warning-border: #f59e0b;
+    --btn-hover-warning-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+
+    --btn-hover-danger-bg: rgba(239, 68, 68, 0.1);
+    --btn-hover-danger-border: #ef4444;
+    --btn-hover-danger-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+
+    /* 新增：success按钮悬浮配色 - 浅色模式 */
+    --btn-hover-success-bg: rgba(16, 185, 129, 0.1);
+    --btn-hover-success-border: #10b981;
+    --btn-hover-success-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+
+    /* 主按钮配色 - 浅色模式 */
+    --main-btn-bg: #0ea5e9;
+    --main-btn-text: #ffffff;
+    --main-btn-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+    --main-btn-hover-shadow: 0 6px 20px rgba(14, 165, 233, 0.5);
+
+    /* 玻璃态效果 - 浅色模式 */
+    --glass-backdrop: blur(12px);
+    --glass-bg-strong: rgba(255, 255, 255, 0.85);
+    --glass-border-strong: rgba(228, 228, 231, 0.8);
 }
 
 html.dark {
@@ -23,9 +68,11 @@ html.dark {
        🌑 深色模式 - 极致对比 (优化版)
        ========================================= */
     --bg-body: #121212;             /* 纯黑背景 */
-    --bg-card: #333;             /* 提升卡片亮度到 Zinc-900 左右，增强对比 */
+    --bg-card: #333;                /* 提升卡片亮度到 Zinc-900 左右，增强对比 */
     --bg-header: rgba(0, 0, 0, 0.8);
     --bg-glass: rgba(255, 255, 255, 0.04);
+
+    --primary-color: #60a5fa;
 
     --text-main: #f4f4f5;           /* 接近纯白 */
     --text-secondary: #a1a1aa;      /* 中灰色 */
@@ -34,9 +81,52 @@ html.dark {
     /* 关键修改：边框颜色稍微提亮，使卡片轮廓在全黑背景下极其清晰 */
     --border-color: #2d2d30;
 
-    /* 增加一个非常微弱的投影，在深色下起到“抬升”效果 */
+    /* 增加一个非常微弱的投影，在深色下起到"抬升"效果 */
     --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02), 0 8px 16px rgba(0, 0, 0, 0.6);
 
     --grid-line: rgba(255, 255, 255, 0.03);
     --vignette: radial-gradient(circle at center, transparent 0%, #000000 120%);
+
+    /* =========================================
+       🎨 赛博朋克色彩系统 - 深色模式
+       ========================================= */
+    --cyber-primary: #38bdf8;       /* 科技蓝（深色模式更亮） */
+    --cyber-warning: #fbbf24;       /* 警告橙（深色模式更亮） */
+    --cyber-danger: #f87171;        /* 危险红（深色模式更亮） */
+    --cyber-success: #34d399;       /* 成功绿（深色模式更亮） */
+    --cyber-info: #60a5fa;          /* 信息蓝 */
+
+    /* 按钮配色 - 深色模式 */
+    --btn-base-bg: rgba(45, 45, 48, 0.8);
+    --btn-base-border: rgba(255, 255, 255, 0.1);
+    --btn-base-text: #f4f4f5;
+    --btn-base-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+    --btn-hover-primary-bg: rgba(56, 189, 248, 0.15);
+    --btn-hover-primary-border: #38bdf8;
+    --btn-hover-primary-shadow: 0 0 0 1px #38bdf8, 0 0 20px rgba(56, 189, 248, 0.3);
+
+    --btn-hover-warning-bg: rgba(251, 191, 36, 0.15);
+    --btn-hover-warning-border: #fbbf24;
+    --btn-hover-warning-shadow: 0 0 0 1px #fbbf24, 0 0 20px rgba(251, 191, 36, 0.3);
+
+    --btn-hover-danger-bg: rgba(248, 113, 113, 0.15);
+    --btn-hover-danger-border: #f87171;
+    --btn-hover-danger-shadow: 0 0 0 1px #f87171, 0 0 20px rgba(248, 113, 113, 0.3);
+
+    /* 新增：success按钮悬浮配色 - 深色模式 */
+    --btn-hover-success-bg: rgba(52, 211, 153, 0.15);
+    --btn-hover-success-border: #34d399;
+    --btn-hover-success-shadow: 0 0 0 1px #34d399, 0 0 20px rgba(52, 211, 153, 0.3);
+
+    /* 主按钮配色 - 深色模式 */
+    --main-btn-bg: #38bdf8;
+    --main-btn-text: #0f172a;
+    --main-btn-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
+    --main-btn-hover-shadow: 0 6px 30px rgba(56, 189, 248, 0.6);
+
+    /* 玻璃态效果 - 深色模式 */
+    --glass-backdrop: blur(16px);
+    --glass-bg-strong: rgba(51, 51, 51, 0.85);
+    --glass-border-strong: rgba(255, 255, 255, 0.15);
 }

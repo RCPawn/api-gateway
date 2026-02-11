@@ -1,11 +1,14 @@
 package com.rcpawn.filter;
 
 import com.rcpawn.common.entity.GatewayLogDTO; // 注意引入的是 common 里的类
+import com.rcpawn.util.LogBuffer;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -36,6 +39,17 @@ public class LogGlobalFilter implements GlobalFilter, Ordered {
 
         // 2. 链式调用，等请求回来后再记录
         return chain.filter(exchange).then(Mono.fromRunnable(() -> {
+            ServerHttpResponse response = exchange.getResponse();
+            // 1. 检查是否有拦截标记
+            boolean handled = exchange.getAttribute(LogBuffer.LOG_ALREADY_HANDLED) != null;
+            // 2. 或者检查状态码 (比如不记录 401, 403, 429)
+            boolean isBlockCode = response.getStatusCode() == HttpStatus.UNAUTHORIZED
+                    || response.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS;
+
+            if (handled || isBlockCode) {
+                return; // 跳过 MQ
+            }
+
             long endTime = System.currentTimeMillis();
             
             // 3. 封装日志对象

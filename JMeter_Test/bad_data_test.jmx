@@ -33,7 +33,7 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="token" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI4ODgiLCJleHAiOjE3NzA4OTI5NzQsImlhdCI6MTc3MDgwNjU3NCwidXNlcm5hbWUiOiJBZG1pbiJ9.D3zZbwr1K22eMQ8h_rTh3-wRKkDqpydqjqv1ZfXelCvpHHW4N96vy8Fv2CcCwUkGSxSP8ZfjMfW9Cp-cEeYjoA</stringProp>
+                <stringProp name="Argument.value">eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI4ODgiLCJleHAiOjE3NzEzODIyNzEsImlhdCI6MTc3MTI5NTg3MSwidXNlcm5hbWUiOiJBZG1pbiJ9.aOywgtSgukiqQEwgngLKkw0vAGvjhjWUJvu4Bl3kk1mLqsDcbkDHb7YQ9LW_H2EO7TUbBsJrdL9zs990BnRnzQ</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
                 <boolProp name="HTTPArgument.use_equals">true</boolProp>
                 <stringProp name="Argument.name">token</stringProp>

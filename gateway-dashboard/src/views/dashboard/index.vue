@@ -240,7 +240,7 @@ const initQPSChart = () => {
   qpsChartInstance = echarts.init(qpsChartRef.value)
   qpsChartInstance.setOption({
     backgroundColor: 'transparent',
-    grid: { left: 25, right: 10, top: 10, bottom: 20, containLabel: false },
+    grid: { left: 32, right: 10, top: 10, bottom: 20, containLabel: false },
     xAxis: { type: 'category', data: qpsHistory.timestamps, boundaryGap: false, axisLine: { lineStyle: { color: 'rgba(148,163,184,0.2)' } }, axisLabel: { show: false }, axisTick: { show: false } },
     yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(148,163,184,0.1)', type: 'dashed' } }, axisLabel: { color: '#94a3b8', fontSize: 10 } },
     series: [{ type: 'line', data: qpsHistory.values, smooth: true, symbol: 'none', lineStyle: { color: '#0ea5e9', width: 2 },

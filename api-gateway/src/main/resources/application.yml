@@ -11,6 +11,11 @@ spring:
       port: 6379
       password: "123456"
       database: 6
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 4
 
   rabbitmq:
     host: 127.0.0.1
@@ -28,6 +33,11 @@ spring:
 
     gateway:
       routes: [] # 留空，全靠动态加载
+      httpclient:
+        pool:
+          type: ELASTIC # 使用弹性连接池
+          max-connections: 10000 # 最大连接数调大
+          acquire-timeout: 45000
 
     sentinel:
       transport:
@@ -101,3 +111,8 @@ management:  #【监控探针】
 skywalking:
   oap:
     url: http://localhost:12800  # SkyWalking OAP 地址
+
+logging:
+  level:
+    root: ERROR  # 压测时只看报错，平时用 INFO
+    com.example: ERROR

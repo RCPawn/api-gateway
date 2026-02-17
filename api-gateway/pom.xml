@@ -52,13 +52,6 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- 全局热部署配置 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-            <optional>true</optional>
-        </dependency>
         <!-- 【核心区别】网关专用依赖！千万别加 starter-web！ -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
@@ -104,16 +97,15 @@
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.83</version>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>1.2.83</version>
-        </dependency>
+        </dependency>-->
 
         <!-- 响应式 Redis 依赖 (Gateway 是 WebFlux，必须用 reactive 版本) -->
         <dependency>

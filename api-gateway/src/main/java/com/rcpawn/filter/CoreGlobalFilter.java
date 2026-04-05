@@ -174,5 +174,7 @@ public class CoreGlobalFilter implements GlobalFilter, Ordered {
     }
 
     @Override
-    public int getOrder() { return Ordered.HIGHEST_PRECEDENCE; }
+    public int getOrder() {
+        return Ordered.HIGHEST_PRECEDENCE;
+    }
 }

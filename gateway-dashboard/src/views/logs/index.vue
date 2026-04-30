@@ -1,124 +1,103 @@
 <template>
   <div class="app-container">
-    <div class="stats-overview">
-      <div class="stat-item">
-        <div class="stat-label">请求总数</div>
-        <div class="stat-value">{{ total }}</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">异常率</div>
-        <div class="stat-value warn">2.4%</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">平均响应时间</div>
-        <div class="stat-value highlight">124ms</div>
-      </div>
-    </div>
-
     <div class="action-bar">
       <div class="bar-left">
         <h2 class="page-title">
           <el-icon><Document /></el-icon> 审计日志
         </h2>
+        <p class="page-sub">访问落库记录 · 按时间倒序</p>
       </div>
 
       <div class="bar-right">
-        <div class="search-box">
-          <el-input
-              v-model="queryParams.path"
-              placeholder="搜索请求路径..."
-              clearable
-              class="glass-input"
-              @clear="handleSearch"
-              @keyup.enter="handleSearch"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-        </div>
-
-        <div class="btn-group">
-          <el-button type="primary" plain class="glass-btn" @click="handleSearch">
-            <el-icon><Filter /></el-icon> 筛选查询
-          </el-button>
-          <el-button type="primary" class="glow-btn" @click="fetchData">
-            <el-icon><Refresh /></el-icon> 刷新同步
-          </el-button>
-        </div>
+        <el-input
+          v-model="queryParams.path"
+          placeholder="路径关键字…"
+          clearable
+          class="glass-input search-input"
+          @clear="handleSearch"
+          @keyup.enter="handleSearch"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <el-button type="primary" class="glow-btn" @click="fetchData">
+          <el-icon><Refresh /></el-icon> 刷新
+        </el-button>
       </div>
     </div>
 
     <div class="log-table-wrapper" v-loading="loading">
       <el-table
-          :data="tableData"
-          style="width: 100%"
-          class="custom-table"
-          :header-cell-style="{ background: 'transparent' }"
+        v-if="total > 0 || loading"
+        :data="tableData"
+        style="width: 100%"
+        class="custom-table"
+        :header-cell-style="{ background: 'transparent' }"
+        empty-text="暂无数据"
       >
-        <el-table-column prop="status" label="状态" width="120">
-          <template #default="scope">
-            <div class="status-glow-badge" :class="getStatusClass(scope.row.status)">
-              <span class="dot"></span>
-              <span class="code">{{ scope.row.status }}</span>
+        <el-table-column label="时间" width="168" fixed>
+          <template #default="{ row }">
+            <span class="time-stamp">{{ formatTime(row.requestTime) }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="请求" min-width="280">
+          <template #default="{ row }">
+            <div class="req-cell">
+              <span class="method-text" :class="methodClass(row.method)">{{ row.method || '—' }}</span>
+              <code class="path-code" :title="row.path">{{ row.path || '—' }}</code>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="method" label="方法" width="100">
-          <template #default="scope">
-            <span class="method-text" :class="scope.row.method.toLowerCase()">
-              {{ scope.row.method }}
+        <el-table-column label="状态" width="108" align="center">
+          <template #default="{ row }">
+            <div class="status-glow-badge" :class="getStatusClass(row.status)">
+              <span class="dot"></span>
+              <span class="code">{{ row.status != null ? row.status : '—' }}</span>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="耗时" width="100" align="right" sortable :sort-method="sortByResponseTime">
+          <template #default="{ row }">
+            <span class="latency" :class="{ slow: Number(row.responseTime) > 500 }">
+              {{ row.responseTime != null ? `${row.responseTime}ms` : '—' }}
             </span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="path" label="请求路径" min-width="300">
-          <template #default="scope">
-            <code class="path-code">{{ scope.row.path }}</code>
+        <el-table-column prop="ip" label="客户端" width="140">
+          <template #default="{ row }">
+            <span class="mono-muted">{{ row.ip || '—' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="ip" label="来源 IP" width="150">
-          <template #default="scope">
-            <span class="ip-address">{{ scope.row.ip }}</span>
+        <el-table-column label="用户" width="120">
+          <template #default="{ row }">
+            <span class="user-text">{{ row.userId ? row.userId : '—' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="userId" label="操作人" width="120">
-          <template #default="scope">
-            <div class="user-chip">
-              <el-avatar :size="20" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
-              <span>{{ scope.row.userId || '游客' }}</span>
-            </div>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="responseTime" label="耗时" width="120" sortable>
-          <template #default="scope">
-            <div class="time-tag" :class="{ 'slow': scope.row.responseTime > 500 }">
-              <el-icon><Timer /></el-icon>
-              {{ scope.row.responseTime }}ms
-            </div>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="requestTime" label="时间" width="200">
-          <template #default="scope">
-            <span class="time-stamp">{{ formatTime(scope.row.requestTime) }}</span>
+        <el-table-column v-if="hasAnyTrace" label="Trace" min-width="120">
+          <template #default="{ row }">
+            <span class="trace-line" :title="row.traceId || ''">{{ row.traceId || '—' }}</span>
           </template>
         </el-table-column>
       </el-table>
 
-      <div class="pagination-container">
+      <el-empty v-if="!loading && total === 0" description="暂无访问日志" class="empty-block" />
+
+      <div v-if="total > 0" class="pagination-container">
         <el-pagination
-            v-model:current-page="queryParams.page"
-            v-model:page-size="queryParams.size"
-            :page-sizes="[10, 20, 50]"
-            layout="total, sizes, prev, pager, next"
-            :total="total"
-            @size-change="handleSearch"
-            @current-change="fetchData"
+          v-model:current-page="queryParams.page"
+          v-model:page-size="queryParams.size"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          :total="total"
+          @size-change="handleSearch"
+          @current-change="fetchData"
         />
       </div>
     </div>
@@ -126,13 +105,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { getLogList } from '@/api/log'
-import { Search, Refresh, Filter, Document, Timer } from '@element-plus/icons-vue'
+import { Search, Refresh, Document } from '@element-plus/icons-vue'
 
 const tableData = ref([])
 const total = ref(0)
 const loading = ref(false)
+
+const hasAnyTrace = computed(() => tableData.value.some((r) => r.traceId))
 
 const queryParams = reactive({
   page: 1,
@@ -145,7 +126,7 @@ const fetchData = async () => {
   try {
     const res = await getLogList(queryParams)
     tableData.value = res.records || []
-    total.value = res.total || 0
+    total.value = res.total != null ? res.total : 0
   } catch (error) {
     console.error(error)
   } finally {
@@ -159,15 +140,35 @@ const handleSearch = () => {
 }
 
 const getStatusClass = (status) => {
-  if (status >= 200 && status < 300) return 's-success'
-  if (status >= 400 && status < 500) return 's-warning'
+  const n = Number(status)
+  if (Number.isNaN(n)) return 's-muted'
+  if (n >= 200 && n < 300) return 's-success'
+  if (n >= 400 && n < 500) return 's-warning'
   return 's-error'
 }
 
-const formatTime = (isoStr) => {
-  if (!isoStr) return ''
-  const date = new Date(isoStr)
-  return `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`
+const methodClass = (m) => {
+  const x = String(m || '').toLowerCase()
+  if (x === 'post') return 'post'
+  if (x === 'get') return 'get'
+  if (x === 'delete') return 'delete'
+  if (x === 'put' || x === 'patch') return 'put'
+  return ''
+}
+
+const sortByResponseTime = (a, b) => {
+  const na = Number(a.responseTime)
+  const nb = Number(b.responseTime)
+  return (Number.isNaN(na) ? 0 : na) - (Number.isNaN(nb) ? 0 : nb)
+}
+
+const pad2 = (n) => String(n).padStart(2, '0')
+
+const formatTime = (v) => {
+  if (v == null || v === '') return '—'
+  const date = v instanceof Date ? v : new Date(v)
+  if (Number.isNaN(date.getTime())) return '—'
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`
 }
 
 onMounted(fetchData)
@@ -177,35 +178,17 @@ onMounted(fetchData)
 .app-container {
   padding: 20px 40px;
   background-color: var(--bg-body);
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* 顶部统计组件 */
-.stats-overview {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.stat-item {
-  flex: 1;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  padding: 20px;
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-}
-
-.stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
-.stat-value { font-size: 24px; font-weight: 700; color: var(--text-main); }
-.stat-value.highlight { color: var(--text-highlight); }
-.stat-value.warn { color: #f43f5e; }
-
-/* 操作栏对齐 */
 .action-bar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .page-title {
@@ -214,26 +197,32 @@ onMounted(fetchData)
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0;
+  margin: 0 0 4px;
 }
 
-.bar-right { display: flex; align-items: center; gap: 16px; }
+.page-sub {
+  margin: 0;
+  padding-left: 30px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
 
-.search-box { width: 240px; transition: all 0.3s ease; }
-.search-box:focus-within { width: 320px; }
+.bar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-input {
+  width: min(320px, 42vw);
+}
 
 :deep(.glass-input .el-input__wrapper) {
   background-color: var(--bg-glass);
   box-shadow: 0 0 0 1px var(--border-color) inset;
   border-radius: 10px;
   height: 38px;
-}
-
-.glass-btn {
-  background: var(--bg-glass) !important;
-  border: 1px solid var(--border-color) !important;
-  color: var(--text-main) !important;
-  border-radius: 8px;
 }
 
 .glow-btn {
@@ -244,13 +233,17 @@ onMounted(fetchData)
   color: #fff;
 }
 
-/* 表格深度定制 */
 .log-table-wrapper {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 10px;
   backdrop-filter: blur(10px);
+  min-height: 200px;
+}
+
+.empty-block {
+  padding: 48px 16px;
 }
 
 :deep(.custom-table) {
@@ -260,81 +253,171 @@ onMounted(fetchData)
   --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.05);
 }
 
-:deep(.el-table__row) { background: transparent !important; }
-:deep(.el-table__cell) { border-bottom: 1px solid var(--border-color) !important; }
+:deep(.el-table__row) {
+  background: transparent !important;
+}
+:deep(.el-table__cell) {
+  border-bottom: 1px solid var(--border-color) !important;
+}
 
-/* 状态 Badge */
 .status-glow-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
+  gap: 6px;
+  padding: 3px 10px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   background: rgba(255, 255, 255, 0.05);
 }
 
 .status-glow-badge .dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
 }
 
-.s-success { color: #10b981; }
-.s-success .dot { background: #10b981; box-shadow: 0 0 8px #10b981; }
+.s-success {
+  color: #10b981;
+}
+.s-success .dot {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
 
-.s-warning { color: #f59e0b; }
-.s-warning .dot { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+.s-warning {
+  color: #f59e0b;
+}
+.s-warning .dot {
+  background: #f59e0b;
+  box-shadow: 0 0 6px #f59e0b;
+}
 
-.s-error { color: #f43f5e; }
-.s-error .dot { background: #f43f5e; box-shadow: 0 0 8px #f43f5e; }
+.s-error {
+  color: #f43f5e;
+}
+.s-error .dot {
+  background: #f43f5e;
+  box-shadow: 0 0 6px #f43f5e;
+}
 
-/* 方法类型字体 */
-.method-text { font-weight: 800; font-size: 12px; }
-.method-text.post { color: #10b981; }
-.method-text.get { color: var(--text-highlight); }
-.method-text.delete { color: #f43f5e; }
+.s-muted {
+  color: var(--text-secondary);
+}
+.s-muted .dot {
+  background: var(--text-secondary);
+}
 
-/* 路径与用户 */
+.method-text {
+  font-weight: 800;
+  font-size: 11px;
+  min-width: 44px;
+  text-align: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+}
+.method-text.post {
+  color: #10b981;
+}
+.method-text.get {
+  color: var(--text-highlight);
+}
+.method-text.delete {
+  color: #f43f5e;
+}
+.method-text.put {
+  color: #a78bfa;
+}
+
+.req-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
 .path-code {
-  background: rgba(0,0,0,0.3);
+  flex: 1;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.22);
   padding: 4px 8px;
   border-radius: 6px;
   color: var(--text-secondary);
-  font-family: 'Fira Code', monospace;
-  font-size: 13px;
+  font-family: ui-monospace, 'Fira Code', Consolas, monospace;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.user-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #a5f3fc;
-  font-size: 13px;
+.mono-muted {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
-/* 时间与耗时 */
-.time-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.user-text {
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.trace-line {
+  display: block;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.latency {
   font-size: 13px;
   color: #4ade80;
+  font-variant-numeric: tabular-nums;
 }
-.time-tag.slow { color: #f87171; font-weight: bold; }
+.latency.slow {
+  color: #f87171;
+  font-weight: 700;
+}
 
-.time-stamp { color: var(--text-secondary); font-size: 12px; }
+.time-stamp {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 
-/* 分页适配 */
 .pagination-container {
-  margin-top: 20px;
-  padding: 10px;
+  margin-top: 16px;
+  padding: 6px 4px 4px;
   display: flex;
   justify-content: flex-end;
 }
 
-:deep(.el-pagination button) { background: transparent !important; color: var(--text-main) !important; }
-:deep(.el-pagination .el-pager li) { background: transparent !important; color: var(--text-secondary); }
-:deep(.el-pagination .el-pager li.is-active) { color: var(--text-highlight) !important; font-weight: 900; }
+:deep(.el-pagination button) {
+  background: transparent !important;
+  color: var(--text-main) !important;
+}
+:deep(.el-pagination .el-pager li) {
+  background: transparent !important;
+  color: var(--text-secondary);
+}
+:deep(.el-pagination .el-pager li.is-active) {
+  color: var(--text-highlight) !important;
+  font-weight: 900;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 16px;
+  }
+  .search-input {
+    width: 100%;
+  }
+  .bar-right {
+    width: 100%;
+  }
+}
 </style>

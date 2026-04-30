@@ -109,8 +109,11 @@ management:  #【监控探针】
       show-details: always
 
 skywalking:
-  oap:
-    url: http://localhost:12800  # SkyWalking OAP 地址
+  # 供 SkyWalkingService 拉取拓扑（须含 /graphql；与 IDEA 中 OAP 地址一致即可）
+  oap-url: http://127.0.0.1:12800/graphql
+  topology:
+    # Agent 未配置 service_name 时 OAP 会显示默认值，此处视为网关以便连线与展示名修正（不影响已在 IDEA 中正确命名的实例）
+    gateway-service-name-aliases: Your_ApplicationName,your_applicationname
 
 logging:
   level:

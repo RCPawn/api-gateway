@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -24,6 +25,16 @@ public class SkyWalkingService {
 
     @Value("${skywalking.oap-url:http://127.0.0.1:12800/graphql}")
     private String oapUrl;
+
+    /** 本进程在 Spring 中的名字，用于把 Agent 默认名映射成驾驶舱期望的展示名 */
+    @Value("${spring.application.name:api-gateway}")
+    private String localApplicationName;
+
+    /**
+     * 逗号分隔：OAP 上若仍显示 Agent 默认服务名，则按网关节点处理（避免 User→「默认名」被误判为 APP 后改写出自环边被丢弃）
+     */
+    @Value("${skywalking.topology.gateway-service-name-aliases:Your_ApplicationName}")
+    private String gatewayServiceNameAliases;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -66,7 +77,11 @@ public class SkyWalkingService {
             if (respStr == null) return Collections.emptyMap();
 
             JSONObject json = JSON.parseObject(respStr);
-            if (json == null || json.containsKey("errors")) return Collections.emptyMap();
+            if (json == null) return Collections.emptyMap();
+            if (json.containsKey("errors")) {
+                log.warn("SkyWalking GraphQL errors: {}", json.get("errors"));
+                return Collections.emptyMap();
+            }
 
             JSONObject data = json.getJSONObject("data");
             if (data == null) return Collections.emptyMap();
@@ -144,10 +159,9 @@ public class SkyWalkingService {
                     // 说明这是采样丢失导致的“直连错觉”，强行把源头改成 Gateway
                     if ("USER".equals(sType) && "APP".equals(tType)) {
                         if (gatewayId != null) {
-                            sourceId = gatewayId; // 偷梁换柱：User -> Gateway
-                        } else {
-                            continue; // 如果没找到网关节点，直接丢弃这条错乱线
+                            sourceId = gatewayId; // 采样丢失时：User -> 下游 纠正为 Gateway -> 下游
                         }
+                        // 未识别到网关时仍保留 User -> 服务，避免驾驶舱「无线」
                     }
 
                     // 避免自我连接
@@ -182,6 +196,14 @@ public class SkyWalkingService {
         String lowerType = type != null ? type.toLowerCase() : "";
         String normalizedType = "APP"; // 默认
 
+        // 0. Agent 未传 service_name 时 SkyWalking 默认名，按网关处理并替换展示名（与 spring.application.name 一致）
+        if (isGatewayServiceAlias(name)) {
+            map.put("name", localApplicationName);
+            map.put("symbolSize", 60);
+            map.put("itemStyle", Collections.singletonMap("color", "#0ea5e9"));
+            return "GATEWAY";
+        }
+
         // 1. Gateway
         if (lowerName.contains("gateway") || lowerType.contains("gateway")) {
             map.put("symbolSize", 60);
@@ -213,6 +235,21 @@ public class SkyWalkingService {
             normalizedType = "APP";
         }
         return normalizedType;
+    }
+
+    private Set<String> gatewayAliasSet() {
+        if (gatewayServiceNameAliases == null || gatewayServiceNameAliases.isBlank()) {
+            return Collections.emptySet();
+        }
+        return Arrays.stream(gatewayServiceNameAliases.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+    }
+
+    private boolean isGatewayServiceAlias(String name) {
+        return name != null && gatewayAliasSet().contains(name.toLowerCase(Locale.ROOT));
     }
 
     private String getTime(int minuteOffset) {

@@ -63,6 +63,44 @@
     --glass-border-strong: rgba(228, 228, 231, 0.8);
 }
 
+/* 驾驶舱布局：27 寸大屏与 15.6 寸笔记本等视口通用缩放 */
+:root,
+html.dark {
+    --cockpit-nav-top: clamp(10px, 2.2vmin, 24px);
+    --cockpit-main-pt: clamp(80px, 10.5vmin, 108px);
+    --cockpit-ui-pad-x: clamp(10px, 2.8vw, 48px);
+    --cockpit-ui-pad-y: clamp(8px, 1.6vmin, 22px);
+    /* 侧栏：小屏收窄留足拓扑区，大屏上限避免过宽 */
+    --cockpit-hud-width: clamp(252px, 16vw + 56px, 420px);
+    --cockpit-hud-rotate: 8deg;
+    --cockpit-bottom-dock: clamp(12px, 2.6vmin, 40px);
+}
+
+@media (max-width: 1440px) {
+    :root,
+    html.dark {
+        --cockpit-hud-width: clamp(240px, 20vw + 32px, 360px);
+        --cockpit-hud-rotate: 5deg;
+    }
+}
+
+@media (max-width: 1280px) {
+    :root,
+    html.dark {
+        --cockpit-hud-width: clamp(228px, 24vw, 320px);
+        --cockpit-hud-rotate: 3deg;
+        --cockpit-ui-pad-x: clamp(8px, 2vw, 24px);
+    }
+}
+
+@media (max-width: 1024px) {
+    :root,
+    html.dark {
+        --cockpit-hud-rotate: 0deg;
+        --cockpit-main-pt: clamp(76px, 12vmin, 100px);
+    }
+}
+
 html.dark {
     /* =========================================
        🌑 深色模式 - 极致对比 (优化版)

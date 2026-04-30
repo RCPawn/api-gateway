@@ -75,16 +75,21 @@ const handleNav = (path) => {
 <style scoped>
 /* App.vue 现在只负责布局定位，颜色全靠 style.css */
 .cockpit-container {
-  width: 100vw;
+  width: 100%;
+  max-width: 100vw;
+  min-height: 100vh;
+  min-height: 100dvh;
   height: 100vh;
+  height: 100dvh;
   position: relative;
   background-color: var(--bg-body);
+  box-sizing: border-box;
 }
 
 /* === 导航栏 === */
 .command-deck {
   position: absolute;
-  top: 24px;
+  top: var(--cockpit-nav-top, 24px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
@@ -92,11 +97,15 @@ const handleNav = (path) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 40px;
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+  gap: clamp(8px, 2vw, 40px);
 
-  padding: 0.8rem 2rem;
-  width: auto;
-  min-width: 650px;
+  padding: 0.65rem clamp(1rem, 2.8vw, 2rem);
+  width: min(96vw, 1000px);
+  max-width: calc(100vw - 24px);
+  min-width: 0;
+  box-sizing: border-box;
 
   background-color: var(--bg-header); /* 跟随主题 */
   backdrop-filter: blur(12px) saturate(180%); /* 磨砂玻璃 */
@@ -116,6 +125,7 @@ const handleNav = (path) => {
   font-weight: 800;
   letter-spacing: 1px;
   color: var(--text-main);
+  flex-shrink: 0;
 }
 
 .logo-text {
@@ -130,12 +140,19 @@ html.dark .logo-text {
 }
 
 /* 菜单项 */
-.nav-items { display: flex; gap: 8px; }
+.nav-items {
+  display: flex;
+  gap: clamp(4px, 1vw, 8px);
+  flex-wrap: wrap;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .nav-item {
-  padding: 8px 16px;
+  padding: clamp(6px, 1.2vw, 8px) clamp(10px, 1.8vw, 16px);
   border-radius: 20px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: clamp(12px, 1.15vw, 14px);
   font-weight: 500;
   color: var(--text-secondary);
   transition: all 0.3s ease;
@@ -152,7 +169,7 @@ html.dark .logo-text {
 }
 
 /* 右侧按钮 */
-.right-actions { display: flex; align-items: center; gap: 15px; }
+.right-actions { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
 .theme-btn { color: var(--text-secondary) !important; }
 .theme-btn:hover { color: var(--text-highlight) !important; }
 
@@ -182,8 +199,14 @@ html.dark .logo-text {
 .main-viewport {
   position: relative;
   z-index: 1;
-  padding-top: 100px;
+  padding-top: var(--cockpit-main-pt, 100px);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  min-height: 100vh;
+  min-height: 100dvh;
   height: 100vh;
+  height: 100dvh;
   box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;

@@ -1,0 +1,53 @@
+---
+description: Git 提交使用 Conventional Commits + 中文说明，默认工作流 git add . 与 git commit -m
+alwaysApply: true
+---
+
+# Git 提交规范（中文版 Conventional Commits）
+
+当用户要求提交代码或执行 `git commit` 时：
+
+## 提交消息格式
+
+```
+<type>(<scope>): <中文简述>
+
+# 若无合适 scope，可省略括号：
+# <type>: <中文简述>
+```
+
+- **type**（必选，小写）：与变更性质一致，常用取值如下。
+  - `feat`：新功能、对用户可见的能力增强。
+  - `fix`：缺陷修复。
+  - `docs`：仅文档、注释、README 等。
+  - `style`：格式、标点、空格等不改变逻辑的修改。
+  - `refactor`：重构（非新功能也非修 bug）。
+  - `perf`：性能优化。
+  - `test`：测试的补充或修正。
+  - `build`：构建脚本、依赖、CI/CD 配置。
+  - `chore`：杂项维护（工具配置、`.gitignore`、IDE 非业务配置等）。
+- **scope**（可选）：模块或范围，简短英文或项目内约定命名，例如 `gateway`、`service-log`、`repo`。
+- **中文简述**：用一句话说明「做了什么」，避免泛泛的「修改」「更新」；无需在标题写句号。
+
+正文可在需要时使用（多步骤、破坏性变更说明等），与标题空一行书写。
+
+## 默认执行步骤（用户未另行指定时）
+
+按顺序在项目根目录执行：
+
+```powershell
+git add .
+git commit -m "<type>(<scope>): <中文简述>"
+```
+
+- 不要在提交中包含 `**/target/` 等构建产物：若仓库根目录尚无忽略规则，应先补充或确认 `.gitignore` 后再 `git add .`。
+- 若本轮变更只适合拆成多条逻辑独立的提交，应分多次 `commit`，而不是堆砌成一条含糊消息。
+
+## 示例
+
+```
+feat(api-gateway): 新增路由健康检查接口
+fix(service-consumer): 修复 Feign 调用丢失鉴权头的问题
+chore(repo): 忽略 Maven target 目录
+docs(readme): 补充本地启动与端口说明
+```

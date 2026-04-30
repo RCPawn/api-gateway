@@ -1,0 +1,5 @@
+{
+  // Maven 多模块：打开工作区后由 Java 语言服务导入（与 IDEA 打开工程一致）
+  "java.import.maven.enabled": true,
+  "java.configuration.updateBuildConfiguration": "automatic"
+}

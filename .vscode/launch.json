@@ -1,0 +1,112 @@
+{
+  // =============================================================================
+  // 与 IntelliJ IDEA「运行/调试配置 → 修改选项 → VM 选项」等价（官方 Java 扩展做法）
+  // 使用：左侧「运行和调试」选择下面任一项 → F5 调试 / Ctrl+F5 运行（无断点）
+  // 停止：Shift+F5 或调试工具栏方块按钮（进程随调试会话结束，与 IDEA 一致）
+  // 探针路径：默认 ${workspaceFolder}/../apache-skywalking-java-agent-9.5.0/...（仓库与 Agent 同级）
+  //          若与机器不符：在本文件内对 javaagent 路径做一次「全部替换」为绝对路径即可
+  // 文档：https://code.visualstudio.com/docs/java/java-debugging
+  // =============================================================================
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "api-gateway (SkyWalking)",
+      "request": "launch",
+      "mainClass": "com.rcpawn.ApiGatewayApplication",
+      "projectName": "api-gateway",
+      "vmArgs": "-Xms4g -Xmx4g -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Dreactor.netty.ioWorkerCount=16 -Dreactor.netty.ioSelectCount=1 -javaagent:${workspaceFolder}/../apache-skywalking-java-agent-9.5.0/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=api-gateway -Dskywalking.collector.backend_service=127.0.0.1:11800",
+      "presentation": { "group": "1_SkyWalking", "order": 1 }
+    },
+    {
+      "type": "java",
+      "name": "service-consumer (SkyWalking)",
+      "request": "launch",
+      "mainClass": "com.rcpawn.ServiceConsumerApplication",
+      "projectName": "service-consumer",
+      "vmArgs": "-javaagent:${workspaceFolder}/../apache-skywalking-java-agent-9.5.0/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=service-consumer -Dskywalking.collector.backend_service=127.0.0.1:11800 -Dskywalking.plugin.nacos.enabled=false -Dskywalking.agent.sample_n_per_3_secs=-1",
+      "presentation": { "group": "1_SkyWalking", "order": 2 }
+    },
+    {
+      "type": "java",
+      "name": "service-provider :8081 (SkyWalking)",
+      "request": "launch",
+      "mainClass": "com.rcpawn.ServiceProviderApplication",
+      "projectName": "service-provider",
+      "vmArgs": "-javaagent:${workspaceFolder}/../apache-skywalking-java-agent-9.5.0/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=service-provider -Dskywalking.collector.backend_service=127.0.0.1:11800 -Dskywalking.plugin.nacos.enabled=false -Dskywalking.agent.sample_n_per_3_secs=-1",
+      "presentation": { "group": "1_SkyWalking", "order": 3 }
+    },
+    {
+      "type": "java",
+      "name": "service-provider :8082 (SkyWalking)",
+      "request": "launch",
+      "mainClass": "com.rcpawn.ServiceProviderApplication",
+      "projectName": "service-provider",
+      "vmArgs": "-javaagent:${workspaceFolder}/../apache-skywalking-java-agent-9.5.0/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=service-provider -Dskywalking.collector.backend_service=127.0.0.1:11800 -Dskywalking.plugin.nacos.enabled=false -Dserver.port=8082",
+      "presentation": { "group": "1_SkyWalking", "order": 4 }
+    },
+    {
+      "type": "java",
+      "name": "service-log (SkyWalking)",
+      "request": "launch",
+      "mainClass": "com.rcpawn.log.ServiceLogApplication",
+      "projectName": "service-log",
+      "vmArgs": "-javaagent:${workspaceFolder}/../apache-skywalking-java-agent-9.5.0/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=service-log -Dskywalking.collector.backend_service=127.0.0.1:11800 -Dskywalking.plugin.nacos.enabled=false -Dskywalking.agent.sample_n_per_3_secs=-1",
+      "presentation": { "group": "1_SkyWalking", "order": 5 }
+    },
+    {
+      "type": "java",
+      "name": "api-gateway (无探针)",
+      "request": "launch",
+      "mainClass": "com.rcpawn.ApiGatewayApplication",
+      "projectName": "api-gateway",
+      "vmArgs": "-Xms4g -Xmx4g -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Dreactor.netty.ioWorkerCount=16 -Dreactor.netty.ioSelectCount=1",
+      "presentation": { "group": "2_无探针", "order": 11 }
+    },
+    {
+      "type": "java",
+      "name": "service-provider (无探针)",
+      "request": "launch",
+      "mainClass": "com.rcpawn.ServiceProviderApplication",
+      "projectName": "service-provider",
+      "presentation": { "group": "2_无探针", "order": 12 }
+    },
+    {
+      "type": "java",
+      "name": "service-consumer (无探针)",
+      "request": "launch",
+      "mainClass": "com.rcpawn.ServiceConsumerApplication",
+      "projectName": "service-consumer",
+      "presentation": { "group": "2_无探针", "order": 13 }
+    },
+    {
+      "type": "java",
+      "name": "service-log (无探针)",
+      "request": "launch",
+      "mainClass": "com.rcpawn.log.ServiceLogApplication",
+      "projectName": "service-log",
+      "presentation": { "group": "2_无探针", "order": 14 }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "▶ 核心链路 (Gateway + Consumer + Provider8081) SkyWalking",
+      "configurations": [
+        "api-gateway (SkyWalking)",
+        "service-consumer (SkyWalking)",
+        "service-provider :8081 (SkyWalking)"
+      ],
+      "stopAll": true
+    },
+    {
+      "name": "▶ 全栈含 Log (Gateway + Consumer + Provider8081 + Log) SkyWalking",
+      "configurations": [
+        "api-gateway (SkyWalking)",
+        "service-consumer (SkyWalking)",
+        "service-provider :8081 (SkyWalking)",
+        "service-log (SkyWalking)"
+      ],
+      "stopAll": true
+    }
+  ]
+}

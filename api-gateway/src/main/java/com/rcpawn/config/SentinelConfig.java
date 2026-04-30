@@ -14,6 +14,8 @@ import com.rcpawn.util.LogBuffer;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -23,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @Configuration
+@Order(Ordered.LOWEST_PRECEDENCE)
 public class SentinelConfig {
 
     @Autowired
@@ -45,6 +48,7 @@ public class SentinelConfig {
                 type = "PARAM_FLOW";
             }
 
+            path = effectiveDisplayPath(path, t);
             String ruleSummary = summarizeSentinelRule(t);
             String msg = buildBlockMessage(type, method, path, t);
 
@@ -78,6 +82,29 @@ public class SentinelConfig {
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(BodyInserters.fromValue(bodyJson));
         });
+    }
+
+    /**
+     * 驾驶舱「来源」依赖 path/msg；熔断等场景下 URI 可能为空或仅为 "/"，此时用语义化的 Sentinel resource 补全。
+     */
+    private static String effectiveDisplayPath(String uriPath, Throwable t) {
+        String p = uriPath == null ? "" : uriPath.trim();
+        if (!p.isEmpty() && !"/".equals(p)) {
+            return p;
+        }
+        if (t instanceof BlockException be) {
+            Rule rule = be.getRule();
+            if (rule != null) {
+                String res = rule.getResource();
+                if (res != null && !res.isBlank()) {
+                    if (res.startsWith("Route:")) {
+                        res = res.substring("Route:".length());
+                    }
+                    return res.startsWith("/") ? res : "/" + res;
+                }
+            }
+        }
+        return p;
     }
 
     private static String buildBlockMessage(String type, String method, String path, Throwable t) {

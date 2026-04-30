@@ -2,6 +2,7 @@ package com.rcpawn.controller;
 
 import com.rcpawn.common.util.Result;
 import com.rcpawn.filter.WafFilter;
+import com.rcpawn.util.LogBuffer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.cloud.gateway.event.RefreshRoutesEvent;
@@ -57,8 +58,9 @@ public class DashboardOpsController { // 建议拆分一个新 Controller，或�
         if (keys != null && !keys.isEmpty()) {
             redisTemplate.delete(keys);
         }
-        // 同时清理拦截日志缓存
+        // 同时清理拦截日志缓存与累计次数
         redisTemplate.delete("gateway:dashboard:logs");
+        redisTemplate.delete(LogBuffer.KEY_INTERCEPT_TOTALS);
         
         return Result.success("监控数据已重置");
     }

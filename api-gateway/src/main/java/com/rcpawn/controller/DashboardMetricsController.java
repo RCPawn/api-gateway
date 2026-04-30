@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rcpawn.common.util.Result;
 import com.rcpawn.service.SkyWalkingService;
+import com.rcpawn.util.LogBuffer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
@@ -107,7 +108,7 @@ public class DashboardMetricsController {
     }
 
     @GetMapping("/logs")
-    public Result<List<Map<String, Object>>> getRecentLogs() {
+    public Result<Map<String, Object>> getRecentLogs() {
         List<String> logs = redisTemplate.opsForList().range("gateway:dashboard:logs", 0, 19);
         List<Map<String, Object>> result = new ArrayList<>();
         ObjectMapper mapper = new ObjectMapper();
@@ -119,6 +120,18 @@ public class DashboardMetricsController {
                 } catch (Exception ignored) { }
             }
         }
-        return Result.success(result);
+        Map<String, Long> interceptTotals = new LinkedHashMap<>();
+        Map<Object, Object> rawTotals = redisTemplate.opsForHash().entries(LogBuffer.KEY_INTERCEPT_TOTALS);
+        if (rawTotals != null) {
+            for (Map.Entry<Object, Object> e : rawTotals.entrySet()) {
+                try {
+                    interceptTotals.put(String.valueOf(e.getKey()), Long.parseLong(String.valueOf(e.getValue())));
+                } catch (NumberFormatException ignored) { }
+            }
+        }
+        Map<String, Object> body = new HashMap<>();
+        body.put("logs", result);
+        body.put("interceptTotals", interceptTotals);
+        return Result.success(body);
     }
 }

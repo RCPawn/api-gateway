@@ -103,11 +103,11 @@
                 >
                   <template #content>
                     <div class="intercept-tooltip-box">
-                      <p class="it-head">{{ g.count > 1 ? `同条件合并 ${g.count} 次` : '拦截明细' }}</p>
+                      <p class="it-head">{{ (g.displayCount ?? g.count) > 1 ? `同条件合并 ${g.displayCount ?? g.count} 次` : '拦截明细' }}</p>
                       <dl class="it-dl">
-                        <template v-if="g.count > 1 && g.timeNewestMs !== g.timeOldestMs">
+                        <template v-if="(g.displayCount ?? g.count) > 1 && g.timeNewestMs !== g.timeOldestMs">
                           <dt>时间范围</dt>
-                          <dd>{{ formatFullDateTime(g.timeOldestMs) }} ~ {{ formatFullDateTime(g.timeNewestMs) }}</dd>
+                          <dd>最早 {{ formatFullDateTime(Math.min(g.timeNewestMs, g.timeOldestMs)) }} ～ 最近 {{ formatFullDateTime(Math.max(g.timeNewestMs, g.timeOldestMs)) }}</dd>
                         </template>
                         <template v-else>
                           <dt>时间</dt>
@@ -138,13 +138,9 @@
                     <div class="col-datetime">
                       <span class="dt-date">{{ g.newestParts.date }}</span>
                       <span class="dt-clock">{{ g.newestParts.clock }}</span>
-                      <span
-                        v-if="g.count > 1 && g.timeNewestMs !== g.timeOldestMs"
-                        class="dt-range"
-                      >→ {{ g.oldestParts.date }} {{ g.oldestParts.clock }}</span>
                     </div>
                     <span class="col-type" :class="g.tagClass">{{ g.typeLabel }}</span>
-                    <span class="col-n">{{ g.count }}</span>
+                    <span class="col-n">{{ g.displayCount ?? g.count }}</span>
                     <span class="col-src" :title="g.sourcePath">{{ g.sourcePath }}</span>
                   </div>
                 </el-tooltip>
@@ -201,6 +197,8 @@ const metrics = reactive({ qps: 0, latency: 0, errorRate: '0.00%' })
 const qpsHistory = reactive({ timestamps: [], values: [] })
 const topRoutes = ref([])
 const logs = reactive([])
+/** 与后端 Redis Hash 对齐：按 coarseKey 累计总触发次数（不受列表挤出影响） */
+const interceptTotals = ref({})
 const isWafActive = ref(false)
 const audioCtx = ref(null)
 
@@ -258,12 +256,19 @@ const fetchData = async () => {
 
 const fetchLogs = async () => {
   try {
-    const res = await getRecentLogs()
-    if (res && Array.isArray(res)) {
-      logs.length = 0
-      res.forEach((raw, idx) => logs.push(normalizeInterceptLog(raw, idx)))
-      if (logs.length > 100) logs.splice(100)
+    const payload = await getRecentLogs()
+    let list = []
+    let totals = {}
+    if (Array.isArray(payload)) {
+      list = payload
+    } else if (payload && Array.isArray(payload.logs)) {
+      list = payload.logs
+      totals = payload.interceptTotals || {}
     }
+    logs.length = 0
+    interceptTotals.value = totals
+    list.forEach((raw, idx) => logs.push(normalizeInterceptLog(raw, idx)))
+    if (logs.length > 100) logs.splice(100)
   } catch (e) {
     console.warn('日志数据拉取失败:', e)
   }
@@ -312,7 +317,8 @@ function parseInterceptInstant(raw) {
 /** 展示用接口路径（无前导 /，与路由习惯一致） */
 const normalizeSourcePath = (raw) => {
   let p = String(raw.path || '').trim()
-  if (!p) {
+  const pathStripped = p.replace(/^\/+/, '')
+  if (!p || pathStripped === '') {
     const msg = String(raw.msg || raw.message || '')
     const colon = msg.match(/:\s*(\/[\w\-./]+)/)
     if (colon) p = colon[1]
@@ -321,8 +327,36 @@ const normalizeSourcePath = (raw) => {
       if (mp) p = mp[2]
     }
   }
+  // Sentinel 摘要里的 resource=…（URI 为空、仅为 / 或未写入 path 时仍可展示来源）
+  const p2 = String(p || '').trim()
+  if (!p2 || p2.replace(/^\/+/, '') === '') {
+    const rule = String(raw.rule || '')
+    const rm = rule.match(/resource=([^\s,]+)/)
+    if (rm) {
+      let r = rm[1].trim()
+      if (/^route:/i.test(r)) r = r.slice(6)
+      p = r.startsWith('/') ? r : `/${r}`
+    } else {
+      const msgOnly = String(raw.msg || raw.message || '')
+      const rmMsg = msgOnly.match(/resource=([^\s,]+)/)
+      if (rmMsg) {
+        let r = rmMsg[1].trim()
+        if (/^route:/i.test(r)) r = r.slice(6)
+        p = r.startsWith('/') ? r : `/${r}`
+      }
+    }
+  }
   if (!p) return '—'
   return p.replace(/^\/+/, '')
+}
+
+/** 与 LogBuffer.buildCoarseKey 一致，用于累计次数查询 */
+const buildCoarseInterceptKey = (rawType, sourcePath, clientIp, status) => {
+  const t = String(rawType || 'UNKNOWN').toUpperCase()
+  const seg = sourcePath === '—' || !sourcePath ? '—' : sourcePath
+  const ip = clientIp || ''
+  const st = status != null && status !== '' ? String(status) : '0'
+  return [t, seg, ip, st].join('\u0001')
 }
 
 /** 细分类型：如 QPS 限流、熔断（与 raw.type 区分展示） */
@@ -355,6 +389,7 @@ const normalizeInterceptLog = (raw, idx) => {
   const msg = raw.msg || raw.message || ''
   const ruleLine = rule || null
   const msgLine = msg && msg.trim() && msg !== ruleLine ? msg : null
+  const coarseKey = raw.coarseKey || buildCoarseInterceptKey(rawType, sourcePath, clientIp, status)
   const keyId = `${timeMs}-${idx}-${clientIp}-${sourcePath}`
   return {
     keyId,
@@ -366,7 +401,8 @@ const normalizeInterceptLog = (raw, idx) => {
     clientIp,
     sourcePath,
     ruleLine,
-    msgLine
+    msgLine,
+    coarseKey
   }
 }
 
@@ -411,6 +447,7 @@ const aggregatedLogGroups = computed(() => {
         typeLabel: log.typeLabel,
         tagClass: log.tagClass,
         rawType: log.rawType,
+        coarseKey: log.coarseKey,
         sourcePath: log.sourcePath,
         clientIp: log.clientIp,
         status: log.status,
@@ -430,7 +467,13 @@ const aggregatedLogGroups = computed(() => {
       existing.oldestParts = splitDateTimeParts(log.timeMs)
     }
   }
-  return order.map((k) => map.get(k))
+  return order.map((k) => {
+    const g = map.get(k)
+    const totalsMap = interceptTotals.value
+    const t = Number(totalsMap[g.coarseKey] ?? 0)
+    const displayCount = t > 0 ? Math.max(g.count, t) : g.count
+    return { ...g, displayCount }
+  })
 })
 
 const interceptBadgeTooltip = computed(() => {
@@ -600,7 +643,6 @@ onMounted(() => {
 .col-datetime{display:flex;flex-direction:column;gap:1px;min-width:0;max-width:100%;justify-self:start;align-self:center}
 .dt-date{font-size:9px;color:var(--text-secondary);line-height:1.12;font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
 .dt-clock{font-size:10px;font-variant-numeric:tabular-nums;color:var(--text-main);line-height:1.12;letter-spacing:-0.02em}
-.dt-range{font-size:8px;color:rgba(148,163,184,0.92);margin-top:1px;line-height:1.2;max-width:100%;word-break:break-all}
 .col-n{font-weight:700;font-size:10px;color:rgba(245,158,11,.88);font-family:Consolas,monospace}
 .col-type{font-weight:700;font-size:9px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .col-type.flow{color:#f59e0b}.col-type.fuse{color:#f87171}.col-type.waf{color:#fb7185}.col-type.auth{color:#a78bfa}.col-type.info{color:var(--cyber-primary)}

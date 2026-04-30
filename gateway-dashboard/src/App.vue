@@ -1,8 +1,6 @@
 <template>
   <!-- 最外层容器 -->
   <div class="cockpit-container">
-    <MouseCursor />
-
     <!-- 1. 悬浮指挥台 (导航栏) -->
     <nav class="command-deck">
       <div class="logo-area">
@@ -53,7 +51,6 @@ import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Sunny, Moon } from '@element-plus/icons-vue'
 import { useTheme } from '@/utils/theme'
-import MouseCursor from '@/components/MouseCursor.vue'
 
 const { isDark, toggleTheme } = useTheme()
 const router = useRouter()
@@ -76,12 +73,6 @@ const handleNav = (path) => {
 </script>
 
 <style scoped>
-@media (hover: hover) {
-  /* 强制所有元素继承 html 的自定义鼠标 */
-  body, a, button, .clickable {
-    cursor: inherit !important;
-  }
-}
 /* App.vue 现在只负责布局定位，颜色全靠 style.css */
 .cockpit-container {
   width: 100vw;

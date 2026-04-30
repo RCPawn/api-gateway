@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 修复版：回归高性能 Reactive Pipeline 模式
@@ -139,10 +138,19 @@ public class CoreGlobalFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> handleAuthFail(ServerWebExchange exchange) {
-        if (ThreadLocalRandom.current().nextInt(10) == 0) {
-            String ip = Objects.requireNonNull(exchange.getRequest().getRemoteAddress()).getAddress().getHostAddress();
-            logBuffer.record(ip, "AUTH", "Token Invalid");
-        }
+        String ip = Objects.requireNonNull(exchange.getRequest().getRemoteAddress()).getAddress().getHostAddress();
+        String path = exchange.getRequest().getURI().getPath();
+        String method = exchange.getRequest().getMethod().name();
+        logBuffer.record(new LogBuffer.InterceptRecord(
+                ip,
+                "AUTH",
+                "未授权：缺少或无效 Token",
+                method,
+                path,
+                401,
+                "JWT/白名单",
+                System.currentTimeMillis()
+        ));
 
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);

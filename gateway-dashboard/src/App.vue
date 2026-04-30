@@ -114,7 +114,8 @@ const handleNav = (path) => {
   border-radius: 99px;
   box-shadow: var(--card-shadow);
 
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.35s ease, border-color 0.35s ease,
+    box-shadow 0.35s ease, backdrop-filter 0.35s ease;
 }
 
 /* Logo */
@@ -155,7 +156,7 @@ html.dark .logo-text {
   font-size: clamp(12px, 1.15vw, 14px);
   font-weight: 500;
   color: var(--text-secondary);
-  transition: all 0.3s ease;
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
   white-space: nowrap;
 }
 .nav-item:hover {

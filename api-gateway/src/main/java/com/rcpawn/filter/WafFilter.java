@@ -30,8 +30,19 @@ public class WafFilter implements GlobalFilter, Ordered {
             
             // 模拟拦截：假设我们要拦截 192.168.x.x
             // 为了演示效果，你可以改成拦截本机 IP
-            if (ip.startsWith("192.168.0.100")) { 
-                logBuffer.record(ip, "WAF", "IP Blocked by Firewall");
+            if (ip.startsWith("192.168.0.100")) {
+                String path = exchange.getRequest().getURI().getPath();
+                String method = exchange.getRequest().getMethod().name();
+                logBuffer.record(new LogBuffer.InterceptRecord(
+                        ip,
+                        "WAF",
+                        "IP 命中演示 WAF 规则",
+                        method,
+                        path,
+                        403,
+                        "blacklist:192.168.0.100",
+                        System.currentTimeMillis()
+                ));
                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                 return exchange.getResponse().setComplete();
             }

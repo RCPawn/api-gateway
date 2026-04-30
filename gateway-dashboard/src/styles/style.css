@@ -35,9 +35,25 @@ body::after {
     z-index: -1; /* 放在内容之下 */
 }
 
-/* 4. 全局过渡动画 */
+/* 4. 全局过渡动画（仅可插值属性，避免 theme 变量切换时「全属性」重绘发糊） */
 body, .command-deck, .el-card, .el-drawer, .el-dialog {
-    transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
+    transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease,
+        box-shadow 0.35s ease;
+}
+
+/*
+ * View Transition：关闭根节点默认交叉渐变，否则与 theme.js 里 clip-path 揭示叠两层，观感发涩。
+ * 主题切换瞬间由 html.theme-switching 关闭下方过渡，避免与快照层错位。
+ */
+@media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+    }
+}
+
+html.theme-switching :where(body, .command-deck, .el-card, .el-drawer, .el-dialog) {
+    transition: none !important;
 }
 
 /* --- Element Plus 深度适配 (极致黑风格) --- */

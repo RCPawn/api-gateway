@@ -2,70 +2,102 @@ import { ref, nextTick } from 'vue'
 
 const isDark = ref(false)
 
-export function useTheme() {
+function resolveDarkPreference() {
+    const saved = localStorage.getItem('app-theme')
+    if (saved === 'dark') return true
+    if (saved === 'light') return false
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+}
 
-    // 1. 纯逻辑切换
-    function toggleThemeLogic() {
-        isDark.value = !isDark.value
-        if (isDark.value) {
-            document.documentElement.classList.add('dark')
-            localStorage.setItem('app-theme', 'dark')
-        } else {
-            document.documentElement.classList.remove('dark')
-            localStorage.setItem('app-theme', 'light')
-        }
+/** 与 index.html 内联脚本规则一致，在首帧前由 main 调用，减轻 FOUC */
+export function initTheme() {
+    try {
+        const dark = resolveDarkPreference()
+        isDark.value = dark
+        document.documentElement.classList.toggle('dark', dark)
+    } catch {
+        /* localStorage / matchMedia 不可用 */
+    }
+}
+
+function toggleThemeLogic() {
+    isDark.value = !isDark.value
+    if (isDark.value) {
+        document.documentElement.classList.add('dark')
+        localStorage.setItem('app-theme', 'dark')
+    } else {
+        document.documentElement.classList.remove('dark')
+        localStorage.setItem('app-theme', 'light')
+    }
+}
+
+function prefersReducedMotion() {
+    return (
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+}
+
+/**
+ * 主题切换：优先 View Transition + 圆形揭示；降级为即时切换。
+ * @param {MouseEvent} [event]
+ */
+function toggleTheme(event) {
+    if (prefersReducedMotion()) {
+        toggleThemeLogic()
+        return
     }
 
-    // 2. 带弹性扩散动画的切换
-    const toggleTheme = (event) => {
-        // 获取点击坐标，默认中心
-        const x = event?.clientX ?? window.innerWidth / 2
-        const y = event?.clientY ?? window.innerHeight / 2
+    const x = event?.clientX ?? window.innerWidth / 2
+    const y = event?.clientY ?? window.innerHeight / 2
 
-        // 如果浏览器不支持 API，直接走逻辑
-        if (!document.startViewTransition) {
+    if (typeof document.startViewTransition !== 'function') {
+        toggleThemeLogic()
+        return
+    }
+
+    const root = document.documentElement
+    root.classList.add('theme-switching')
+
+    let transition
+    try {
+        transition = document.startViewTransition(async () => {
             toggleThemeLogic()
-            return
-        }
-
-        // 计算半径：确保覆盖屏幕最远角落
-        const endRadius = Math.hypot(
-            Math.max(x, window.innerWidth - x),
-            Math.max(y, window.innerHeight - y)
-        )
-
-        // 执行转换
-        const transition = document.startViewTransition(async () => {
-            toggleThemeLogic()
-            await nextTick() // 等待 Vue 响应式更新完成
+            await nextTick()
         })
+    } catch {
+        root.classList.remove('theme-switching')
+        toggleThemeLogic()
+        return
+    }
 
-        // 动画执行
-        transition.ready.then(() => {
-            document.documentElement.animate(
+    const clearSwitching = () => root.classList.remove('theme-switching')
+    transition.finished.finally(clearSwitching)
+
+    transition.ready
+        .then(() => {
+            const endRadius =
+                Math.hypot(
+                    Math.max(x, window.innerWidth - x),
+                    Math.max(y, window.innerHeight - y)
+                ) * 1.05
+            return document.documentElement.animate(
                 {
-                    // 从点扩散到超大圆（1.1倍半径增加弹性感）
                     clipPath: [
                         `circle(0px at ${x}px ${y}px)`,
                         `circle(${endRadius}px at ${x}px ${y}px)`
                     ]
                 },
                 {
-                    duration: 600, // 增加到 600ms 以展示弹性细节
-                    // 精心调校的弹性曲线 (Back Out 效果)
-                    easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    duration: 520,
+                    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
                     pseudoElement: '::view-transition-new(root)'
                 }
-            )
+            ).finished
         })
-    }
+        .catch(() => {})
+}
 
-    // 初始化状态
-    const savedTheme = localStorage.getItem('app-theme')
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        isDark.value = true
-        document.documentElement.classList.add('dark')
-    }
-
+export function useTheme() {
     return { isDark, toggleTheme }
 }

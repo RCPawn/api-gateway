@@ -121,7 +121,6 @@
         :title="isEditMode ? '🛠️ 配置规则策略' : '🚀 新增资源保护'"
         width="580px"
         class="glass-dialog"
-        destroy-on-close
     >
       <div class="dialog-content">
         <el-form label-position="top">
@@ -136,8 +135,8 @@
             </el-input>
           </el-form-item>
 
-          <el-tabs type="border-card" class="rule-tabs mt-4">
-            <el-tab-pane label="🚀 流量控制">
+          <el-tabs v-model="activeRuleTab" type="border-card" class="rule-tabs mt-4">
+            <el-tab-pane label="🚀 流量控制" name="flow">
               <el-form :model="flowForm" label-width="120px" class="inner-form">
                 <el-form-item label="阈值类型">
                   <el-radio-group v-model="flowForm.grade">
@@ -159,7 +158,7 @@
               </el-form>
             </el-tab-pane>
 
-            <el-tab-pane label="🔌 熔断降级">
+            <el-tab-pane label="🔌 熔断降级" name="degrade">
               <el-form :model="degradeForm" label-width="120px" class="inner-form">
                 <el-form-item label="熔断策略">
                   <el-select v-model="degradeForm.grade" class="w-full">
@@ -205,6 +204,8 @@ const searchKeyword = ref('')
 const dialogVisible = ref(false)
 const isEditMode = ref(false)
 const currentResourceName = ref('')
+/** 配置弹窗内当前页签：保存限流后切到熔断，便于连续配置 */
+const activeRuleTab = ref('flow')
 
 // 搜索过滤：路径和资源名均可搜索
 const filteredList = computed(() => {
@@ -224,19 +225,59 @@ const degradeForm = ref({
   slowRatioThreshold: 0.6
 })
 
-const fetchData = async () => {
-  loading.value = true
+const fetchData = async (silent = false) => {
+  if (!silent) loading.value = true
   try {
     const data = await getSentinelResources()
     list.value = data || []
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
   }
+}
+
+/** Nacos 写入后立刻拉取可能仍是旧数据，用表单结果合并到列表以保证卡片即时更新 */
+const num = (v, fallback = 0) => {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : fallback
+}
+
+const buildFlowPayload = () => ({
+  ...flowForm.value,
+  resource: currentResourceName.value,
+  count: num(flowForm.value.count, 1)
+})
+
+const buildDegradePayload = () => ({
+  ...degradeForm.value,
+  resource: currentResourceName.value,
+  count: num(degradeForm.value.count, 0),
+  grade: degradeForm.value.grade,
+  timeWindow: degradeForm.value.timeWindow,
+  minRequestAmount: degradeForm.value.minRequestAmount,
+  statIntervalMs: degradeForm.value.statIntervalMs,
+  slowRatioThreshold: num(degradeForm.value.slowRatioThreshold, 0.5)
+})
+
+const mergeResourceSnapshot = (resource, { flowRule, degradeRule }) => {
+  const idx = list.value.findIndex((i) => i.resource === resource)
+  if (idx < 0) {
+    list.value = [...list.value, { resource, flowRule: flowRule ?? null, degradeRule: degradeRule ?? null }]
+    return
+  }
+  list.value = list.value.map((item, i) => {
+    if (i !== idx) return item
+    return {
+      ...item,
+      ...(flowRule !== undefined ? { flowRule } : {}),
+      ...(degradeRule !== undefined ? { degradeRule } : {})
+    }
+  })
 }
 
 const handleAddNew = () => {
   isEditMode.value = false
   currentResourceName.value = ''
+  activeRuleTab.value = 'flow'
   resetForms()
   dialogVisible.value = true
 }
@@ -244,6 +285,7 @@ const handleAddNew = () => {
 const handleEdit = (item) => {
   isEditMode.value = true
   currentResourceName.value = item.resource
+  activeRuleTab.value = 'flow'
   if (item.flowRule) flowForm.value = {...item.flowRule}
   else resetFlowForm()
   if (item.degradeRule) degradeForm.value = {...item.degradeRule}
@@ -253,18 +295,39 @@ const handleEdit = (item) => {
 
 const submitFlow = async () => {
   if (!currentResourceName.value) return ElMessage.warning('资源名不能为空')
-  await saveFlowRule({...flowForm.value, resource: currentResourceName.value})
-  ElMessage.success('流控规则已更新');
-  fetchData();
-  dialogVisible.value = false
+  const payload = buildFlowPayload()
+  await saveFlowRule(payload)
+  ElMessage.success('流控规则已更新')
+  const prev = list.value.find((i) => i.resource === currentResourceName.value)
+  mergeResourceSnapshot(currentResourceName.value, {
+    flowRule: payload,
+    degradeRule: prev?.degradeRule ?? null
+  })
+  isEditMode.value = true
+  await fetchData(true)
+  mergeResourceSnapshot(currentResourceName.value, {
+    flowRule: payload,
+    degradeRule: list.value.find((i) => i.resource === currentResourceName.value)?.degradeRule ?? prev?.degradeRule ?? null
+  })
+  activeRuleTab.value = 'degrade'
 }
 
 const submitDegrade = async () => {
   if (!currentResourceName.value) return ElMessage.warning('资源名不能为空')
-  await saveDegradeRule({...degradeForm.value, resource: currentResourceName.value})
-  ElMessage.success('熔断规则已更新');
-  fetchData();
-  dialogVisible.value = false
+  const payload = buildDegradePayload()
+  await saveDegradeRule(payload)
+  ElMessage.success('熔断规则已更新')
+  const prev = list.value.find((i) => i.resource === currentResourceName.value)
+  mergeResourceSnapshot(currentResourceName.value, {
+    flowRule: prev?.flowRule ?? null,
+    degradeRule: payload
+  })
+  isEditMode.value = true
+  await fetchData(true)
+  mergeResourceSnapshot(currentResourceName.value, {
+    flowRule: list.value.find((i) => i.resource === currentResourceName.value)?.flowRule ?? prev?.flowRule ?? null,
+    degradeRule: payload
+  })
 }
 
 const handleDelete = (resource) => {

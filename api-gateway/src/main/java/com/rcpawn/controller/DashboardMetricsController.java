@@ -1,5 +1,6 @@
 package com.rcpawn.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rcpawn.common.util.Result;
 import com.rcpawn.service.SkyWalkingService;
@@ -106,19 +107,16 @@ public class DashboardMetricsController {
     }
 
     @GetMapping("/logs")
-    public Result<List<Map<String, String>>> getRecentLogs() {
-        // 从 Redis 取出最近 20 条
+    public Result<List<Map<String, Object>>> getRecentLogs() {
         List<String> logs = redisTemplate.opsForList().range("gateway:dashboard:logs", 0, 19);
-
-        List<Map<String, String>> result = new ArrayList<>();
+        List<Map<String, Object>> result = new ArrayList<>();
         ObjectMapper mapper = new ObjectMapper();
 
         if (logs != null) {
             for (String json : logs) {
                 try {
-                    // 转成 Map 返回给前端
-                    result.add(mapper.readValue(json, Map.class));
-                } catch (Exception e) {}
+                    result.add(mapper.readValue(json, new TypeReference<Map<String, Object>>() {}));
+                } catch (Exception ignored) { }
             }
         }
         return Result.success(result);

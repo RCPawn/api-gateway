@@ -73,19 +73,84 @@
             <div class="matrix-btn danger" @click="handleAction('clean')" @mouseenter="playHoverSound"><el-icon class="icon"><DeleteFilled /></el-icon><span>清理</span></div>
           </div>
 
-          <div class="panel-header mt-4">
+          <div class="panel-header mt-4 intercept-log-title-row">
             <span class="panel-title">拦截日志</span>
-            <span class="badge">{{ logs.length }}</span>
+            <span class="badge" :title="interceptBadgeTooltip">{{ aggregatedLogGroups.length }}</span>
+            <div class="decor-line"></div>
           </div>
 
-          <div class="log-terminal">
+          <p v-if="logs.length === 0" class="log-empty-hint">暂无拦截。限流、熔断、WAF、鉴权触发后将按「细分类型 + 接口 + 客户端」自动合并重复项。</p>
+
+          <div v-else class="log-terminal">
+            <div class="log-table-head" aria-hidden="true">
+              <span class="th-time">时间</span>
+              <span class="th-type">类型</span>
+              <span class="th-n">次数</span>
+              <span class="th-src">来源</span>
+            </div>
+            <div class="log-list-scroll">
             <ul class="log-list" ref="logListRef">
-              <li v-for="(log,i) in logs" :key="i" class="log-item">
-                <span class="time">{{ log.time }}</span>
-                <span class="tag" :class="log.type">{{ log.tag }}</span>
-                <span class="msg">{{ log.msg }}</span>
+              <li
+                v-for="(g, i) in aggregatedLogGroups"
+                :key="g.key + i"
+                class="log-item"
+              >
+                <el-tooltip
+                  placement="left"
+                  :show-after="280"
+                  :max-width="320"
+                  popper-class="intercept-log-tooltip"
+                >
+                  <template #content>
+                    <div class="intercept-tooltip-box">
+                      <p class="it-head">{{ g.count > 1 ? `同条件合并 ${g.count} 次` : '拦截明细' }}</p>
+                      <dl class="it-dl">
+                        <template v-if="g.count > 1 && g.timeNewestMs !== g.timeOldestMs">
+                          <dt>时间范围</dt>
+                          <dd>{{ formatFullDateTime(g.timeOldestMs) }} ~ {{ formatFullDateTime(g.timeNewestMs) }}</dd>
+                        </template>
+                        <template v-else>
+                          <dt>时间</dt>
+                          <dd>{{ formatFullDateTime(g.timeNewestMs) }}</dd>
+                        </template>
+                        <dt>类型</dt>
+                        <dd>{{ g.typeLabel }}</dd>
+                        <dt>接口</dt>
+                        <dd class="it-mono">{{ g.sourcePath }}</dd>
+                        <dt v-if="g.clientIp">客户端</dt>
+                        <dd v-if="g.clientIp" class="it-mono">{{ g.clientIp }}</dd>
+                        <template v-if="g.status">
+                          <dt>HTTP</dt>
+                          <dd>{{ g.status }}</dd>
+                        </template>
+                        <template v-if="g.ruleLine">
+                          <dt>规则</dt>
+                          <dd class="it-wrap">{{ g.ruleLine }}</dd>
+                        </template>
+                        <template v-if="g.msgLine">
+                          <dt>说明</dt>
+                          <dd class="it-wrap">{{ g.msgLine }}</dd>
+                        </template>
+                      </dl>
+                    </div>
+                  </template>
+                  <div class="log-row-grid">
+                    <div class="col-datetime">
+                      <span class="dt-date">{{ g.newestParts.date }}</span>
+                      <span class="dt-clock">{{ g.newestParts.clock }}</span>
+                      <span
+                        v-if="g.count > 1 && g.timeNewestMs !== g.timeOldestMs"
+                        class="dt-range"
+                      >→ {{ g.oldestParts.date }} {{ g.oldestParts.clock }}</span>
+                    </div>
+                    <span class="col-type" :class="g.tagClass">{{ g.typeLabel }}</span>
+                    <span class="col-n">{{ g.count }}</span>
+                    <span class="col-src" :title="g.sourcePath">{{ g.sourcePath }}</span>
+                  </div>
+                </el-tooltip>
               </li>
             </ul>
+            </div>
           </div>
         </aside>
       </transition>
@@ -196,12 +261,7 @@ const fetchLogs = async () => {
     const res = await getRecentLogs()
     if (res && Array.isArray(res)) {
       logs.length = 0
-      res.forEach(log => logs.push({
-        time: formatLogTime(log.timestamp || log.time),
-        tag: mapLogLevel(log.level || log.tag),
-        type: mapLogType(log.level || log.type),
-        msg: log.message || log.msg || log.path || ''
-      }))
+      res.forEach((raw, idx) => logs.push(normalizeInterceptLog(raw, idx)))
       if (logs.length > 100) logs.splice(100)
     }
   } catch (e) {
@@ -209,21 +269,177 @@ const fetchLogs = async () => {
   }
 }
 
-const formatLogTime = (timestamp) => {
-  if (!timestamp) return new Date().toLocaleTimeString()
-  if (typeof timestamp === 'number') return new Date(timestamp).toLocaleTimeString()
-  if (typeof timestamp === 'string' && timestamp.includes(':')) return timestamp
-  try { return new Date(timestamp).toLocaleTimeString() } catch { return new Date().toLocaleTimeString() }
+function pad2(n) {
+  return String(n).padStart(2, '0')
 }
 
-const mapLogLevel = (level) => {
-  const m = { block: 'BLOCK', blocked: 'BLOCK', warn: 'WARN', warning: 'WARN', info: 'INFO', error: 'ERROR', danger: 'BLOCK' }
-  return m[(level||'info').toLowerCase()] || 'INFO'
+/** 分解为日期 / 时钟，与表头「时间」列两行对齐 */
+function splitDateTimeParts(ms) {
+  const d = new Date(ms)
+  return {
+    date: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`,
+    clock: `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
+  }
 }
-const mapLogType = (level) => {
-  const m = { block: 'danger', blocked: 'danger', warn: 'warn', warning: 'warn', info: 'info', error: 'danger', danger: 'danger' }
-  return m[(level||'info').toLowerCase()] || 'info'
+
+function formatFullDateTime(ms) {
+  const { date, clock } = splitDateTimeParts(ms)
+  return `${date} ${clock}`
 }
+
+/** 优先 ts(ms)；其次解析含日期的 time；仅 HH:mm:ss 时按当日拼接（兼容旧日志） */
+function parseInterceptInstant(raw) {
+  if (raw.ts != null && raw.ts !== '') {
+    const n = Number(raw.ts)
+    if (!Number.isNaN(n) && n > 0) return n
+  }
+  if (typeof raw.time === 'string') {
+    const t = raw.time.trim()
+    if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
+      const d = new Date(t.replace(/-/g, '/'))
+      if (!isNaN(d.getTime())) return d.getTime()
+    }
+    const m = t.match(/^(\d{1,2}):(\d{2}):(\d{2})$/)
+    if (m) {
+      const d = new Date()
+      d.setHours(Number(m[1]), Number(m[2]), Number(m[3]), 0)
+      return d.getTime()
+    }
+  }
+  return Date.now()
+}
+
+/** 展示用接口路径（无前导 /，与路由习惯一致） */
+const normalizeSourcePath = (raw) => {
+  let p = String(raw.path || '').trim()
+  if (!p) {
+    const msg = String(raw.msg || raw.message || '')
+    const colon = msg.match(/:\s*(\/[\w\-./]+)/)
+    if (colon) p = colon[1]
+    else {
+      const mp = msg.match(/\b(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+(\/[\S]+)/i)
+      if (mp) p = mp[2]
+    }
+  }
+  if (!p) return '—'
+  return p.replace(/^\/+/, '')
+}
+
+/** 细分类型：如 QPS 限流、熔断（与 raw.type 区分展示） */
+const buildInterceptTypeLabel = (rawType, raw) => {
+  const rule = String(raw.rule || '')
+  const msg = String(raw.msg || raw.message || '')
+  if (/QPS\s*Limit/i.test(msg)) return 'QPS 限流'
+  if (rawType === 'FLOW') {
+    if (/阈值QPS|grade\s*=\s*1/i.test(rule)) return 'QPS 限流'
+    if (/线程|grade\s*=\s*0/i.test(rule)) return '并发限流'
+    return '限流'
+  }
+  if (rawType === 'PARAM_FLOW') return '热点参数限流'
+  if (rawType === 'FUSE') return '熔断降级'
+  if (rawType === 'WAF') return 'WAF'
+  if (rawType === 'AUTH') return '鉴权'
+  return mapInterceptTag(rawType)
+}
+
+/** 将后端结构化拦截日志转为驾驶舱行（兼容旧版仅有 time/source/type/msg） */
+const normalizeInterceptLog = (raw, idx) => {
+  const timeMs = parseInterceptInstant(raw)
+  const rawType = String(raw.type || raw.level || 'UNKNOWN').toUpperCase()
+  const tagClass = mapInterceptTagClass(rawType)
+  const typeLabel = buildInterceptTypeLabel(rawType, raw)
+  const sourcePath = normalizeSourcePath(raw)
+  const clientIp = raw.clientIp || raw.source || ''
+  const status = raw.status != null && raw.status !== '' ? String(raw.status) : ''
+  const rule = raw.rule || ''
+  const msg = raw.msg || raw.message || ''
+  const ruleLine = rule || null
+  const msgLine = msg && msg.trim() && msg !== ruleLine ? msg : null
+  const keyId = `${timeMs}-${idx}-${clientIp}-${sourcePath}`
+  return {
+    keyId,
+    timeMs,
+    typeLabel,
+    tagClass,
+    rawType,
+    status,
+    clientIp,
+    sourcePath,
+    ruleLine,
+    msgLine
+  }
+}
+
+const mapInterceptTag = (type) => {
+  const m = {
+    FLOW: '限流',
+    PARAM_FLOW: '热点',
+    FUSE: '熔断',
+    WAF: 'WAF',
+    AUTH: '鉴权'
+  }
+  return m[type] || (type === 'UNKNOWN' ? '其他' : type)
+}
+
+const mapInterceptTagClass = (type) => {
+  if (type === 'FLOW' || type === 'PARAM_FLOW') return 'flow'
+  if (type === 'FUSE') return 'fuse'
+  if (type === 'WAF') return 'waf'
+  if (type === 'AUTH') return 'auth'
+  return 'info'
+}
+
+/** 按「细分类型 + 接口 + 客户端 + 状态 + 规则 + 说明」合并重复拦截（窗口内列表从新到旧） */
+const aggregatedLogGroups = computed(() => {
+  const order = []
+  const map = new Map()
+  for (const log of logs) {
+    const key = [
+      log.rawType,
+      log.typeLabel,
+      log.sourcePath,
+      log.clientIp || '',
+      log.status || '',
+      log.ruleLine || '',
+      log.msgLine || ''
+    ].join('\u0001')
+    const existing = map.get(key)
+    if (!existing) {
+      const parts = splitDateTimeParts(log.timeMs)
+      const g = {
+        key,
+        typeLabel: log.typeLabel,
+        tagClass: log.tagClass,
+        rawType: log.rawType,
+        sourcePath: log.sourcePath,
+        clientIp: log.clientIp,
+        status: log.status,
+        ruleLine: log.ruleLine,
+        msgLine: log.msgLine,
+        timeNewestMs: log.timeMs,
+        timeOldestMs: log.timeMs,
+        newestParts: parts,
+        oldestParts: { ...parts },
+        count: 1
+      }
+      map.set(key, g)
+      order.push(key)
+    } else {
+      existing.count++
+      existing.timeOldestMs = log.timeMs
+      existing.oldestParts = splitDateTimeParts(log.timeMs)
+    }
+  }
+  return order.map((k) => map.get(k))
+})
+
+const interceptBadgeTooltip = computed(() => {
+  const n = logs.length
+  const g = aggregatedLogGroups.value.length
+  if (!n) return ''
+  if (n === g) return `共 ${n} 条（无重复可合并）`
+  return `窗口内 ${n} 条记录，已合并为 ${g} 组（悬停查看规则与说明）`
+})
 
 // QPS 历史（小图）
 const updateQPSHistory = (qps) => {
@@ -325,7 +541,7 @@ onMounted(() => {
 .ui-layer{position:absolute;inset:0;z-index:10;padding:var(--cockpit-ui-pad-y,20px) var(--cockpit-ui-pad-x,40px);display:flex;justify-content:space-between;align-items:stretch;gap:clamp(8px,1.5vw,24px);pointer-events:none;box-sizing:border-box}
 .hud-panel{width:var(--cockpit-hud-width,380px);max-width:min(var(--cockpit-hud-width,380px),calc(50vw - var(--cockpit-ui-pad-x) - 14px));min-width:0;height:100%;pointer-events:auto;display:flex;flex-direction:column;perspective:800px;overflow:hidden;box-sizing:border-box}
 .left-wing{transform:rotateY(var(--cockpit-hud-rotate, 8deg)) translateZ(10px)}.right-wing{transform:rotateY(calc(-1 * var(--cockpit-hud-rotate, 8deg))) translateZ(10px)}
-.metric-card,.control-matrix,.log-terminal{background:var(--glass-bg-strong);backdrop-filter:var(--glass-backdrop);border:1px solid var(--glass-border-strong);padding:18px;margin-bottom:16px;border-radius:6px;box-shadow:var(--card-shadow);transition:all .3s ease}
+.metric-card,.control-matrix{background:var(--glass-bg-strong);backdrop-filter:var(--glass-backdrop);border:1px solid var(--glass-border-strong);padding:18px;margin-bottom:16px;border-radius:6px;box-shadow:var(--card-shadow);transition:all .3s ease}
 .chart-card{padding:clamp(12px,1.8vmin,16px)}.qps-display{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}.mini-chart{width:100%;height:clamp(72px,11vh,120px);margin-top:8px;min-height:72px}
 .dual-metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
 .compact-metric{background:var(--glass-bg-strong);backdrop-filter:var(--glass-backdrop);border:1px solid var(--glass-border-strong);padding:14px;border-radius:6px;box-shadow:var(--card-shadow);display:flex;gap:12px;align-items:flex-start}
@@ -362,10 +578,41 @@ onMounted(() => {
 .matrix-btn.warning:hover{background:var(--btn-hover-warning-bg);border-color:var(--btn-hover-warning-border);color:var(--cyber-warning);box-shadow:var(--btn-hover-warning-shadow)}
 .matrix-btn .icon{font-size:22px;transition:all .2s ease}.matrix-btn:hover .icon{transform:scale(1.15)}
 
-.log-terminal{flex:1;overflow-y:auto;font-family:Consolas,monospace;font-size:11px;padding-right:4px;min-height:0}
-.log-terminal::-webkit-scrollbar{width:4px}.log-terminal::-webkit-scrollbar-track{background:rgba(255,255,255,0.05);border-radius:2px}.log-terminal::-webkit-scrollbar-thumb{background:var(--cyber-primary);border-radius:2px;opacity:.5}.log-terminal::-webkit-scrollbar-thumb:hover{opacity:.8}
-.log-list{margin:0;padding:0;list-style:none}.log-item{margin-bottom:8px;display:flex;gap:10px;opacity:.9;transition:all .2s ease}.log-item:hover{opacity:1;transform:translateX(2px)}
-.time{color:var(--text-secondary);min-width:70px;font-size:10px}.tag{min-width:50px;font-weight:700;font-size:10px}.tag.warn{color:var(--cyber-warning)}.tag.danger{color:var(--cyber-danger)}.tag.info{color:var(--cyber-primary)}.msg{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.intercept-log-title-row{align-items:center}
+.log-terminal{flex:1;display:flex;flex-direction:column;min-height:0;min-width:0;margin:0;padding:0;background:transparent;border:none;box-shadow:none;font-family:Consolas,monospace;font-size:10px;--log-time:minmax(58px,0.52fr);--log-type:minmax(56px,1fr);--log-n:32px;--log-src:minmax(0,1.55fr);--log-cols:var(--log-time) var(--log-type) var(--log-n) var(--log-src);--log-gap:clamp(6px,1.4vw,11px)}
+.log-list-scroll{flex:1;overflow-y:auto;min-height:0;padding-right:2px;margin:0}
+.log-list-scroll::-webkit-scrollbar{width:4px}.log-list-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,0.04);border-radius:2px}.log-list-scroll::-webkit-scrollbar-thumb{background:var(--cyber-primary);border-radius:2px;opacity:.45}.log-list-scroll::-webkit-scrollbar-thumb:hover{opacity:.75}
+.log-table-head,.log-row-grid{display:grid;grid-template-columns:var(--log-cols);column-gap:var(--log-gap);align-items:center;min-width:0}
+/* 表头：略增高并与下方首行时间块视觉对齐（与两行日期+时钟的垂直中心大致重合） */
+.log-table-head{min-height:38px;padding:0 4px 10px;margin:0 0 6px;align-items:center;border-bottom:1px solid rgba(56,189,248,0.14);box-sizing:border-box}
+.log-table-head span{font-size:9px;font-weight:600;letter-spacing:1.1px;font-family:'Orbitron','Rajdhani',sans-serif;text-transform:uppercase;color:rgba(186,230,253,0.78);line-height:1.2}
+.th-time{justify-self:start;text-align:left;align-self:center}
+.th-type{justify-self:center;text-align:center;align-self:center}
+.th-n{justify-self:center;text-align:center;align-self:center}
+.th-src{justify-self:start;text-align:left;min-width:0;align-self:center}
+.log-list{margin:0;padding:0;list-style:none}
+.log-item{margin:0;padding:0;border:none}
+.log-item:hover{background:rgba(56,189,248,0.05)}
+.log-row-grid{padding:7px 4px;cursor:default}
+.log-row-grid .col-type{justify-self:center;align-self:center;text-align:center;max-width:100%}
+.log-row-grid .col-n{justify-self:center;text-align:center}
+.log-row-grid .col-src{justify-self:start;min-width:0}
+.col-datetime{display:flex;flex-direction:column;gap:1px;min-width:0;max-width:100%;justify-self:start;align-self:center}
+.dt-date{font-size:9px;color:var(--text-secondary);line-height:1.12;font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
+.dt-clock{font-size:10px;font-variant-numeric:tabular-nums;color:var(--text-main);line-height:1.12;letter-spacing:-0.02em}
+.dt-range{font-size:8px;color:rgba(148,163,184,0.92);margin-top:1px;line-height:1.2;max-width:100%;word-break:break-all}
+.col-n{font-weight:700;font-size:10px;color:rgba(245,158,11,.88);font-family:Consolas,monospace}
+.col-type{font-weight:700;font-size:9px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.col-type.flow{color:#f59e0b}.col-type.fuse{color:#f87171}.col-type.waf{color:#fb7185}.col-type.auth{color:#a78bfa}.col-type.info{color:var(--cyber-primary)}
+.col-src{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-main);font-size:10px}
+.intercept-tooltip-box{min-width:0;max-width:300px;padding:2px 0}
+.it-head{margin:0 0 8px;font-size:11px;font-weight:700;color:var(--cyber-primary);letter-spacing:0.5px;font-family:'Orbitron','Rajdhani',sans-serif}
+.it-dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:11px;line-height:1.45}
+.it-dl dt{margin:0;color:var(--text-secondary);font-weight:600;white-space:nowrap}
+.it-dl dd{margin:0;color:var(--text-main);min-width:0}
+.it-mono{font-family:Consolas,monospace;font-size:10px}
+.it-wrap{word-break:break-word;white-space:pre-wrap}
+.log-empty-hint{font-size:11px;color:var(--text-secondary);margin:0 0 12px;line-height:1.45;opacity:.88}
 
 .bottom-dock{position:absolute;bottom:var(--cockpit-bottom-dock,30px);left:50%;transform:translateX(-50%);display:flex;gap:clamp(12px,2vw,24px);pointer-events:auto;align-items:center;z-index:20;max-width:calc(100% - 2 * var(--cockpit-ui-pad-x));padding:0 8px;box-sizing:border-box}
 .main-btn{background:var(--main-btn-bg);color:var(--main-btn-text);border:none;padding:clamp(10px,1.6vmin,14px) clamp(20px,3vw,32px);font-weight:bold;font-family:'Orbitron',sans-serif;letter-spacing:1.5px;font-size:clamp(12px,1.3vmin,14px);clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .3s ease;box-shadow:var(--main-btn-shadow);pointer-events:auto;white-space:nowrap}
@@ -394,4 +641,18 @@ iframe{width:100%;height:calc(100% - 40px);background:var(--bg-body);border:none
 /* responsive */
 @media (max-width:1200px){.compact-value{font-size:clamp(16px,2.2vmin,20px)}.bottom-dock{flex-direction:column;gap:12px}}
 @media (max-width:768px){.ui-layer{flex-direction:column;padding:var(--cockpit-ui-pad-y) var(--cockpit-ui-pad-x);overflow-y:auto;align-items:stretch;justify-content:flex-start}.hud-panel{width:100%;max-width:100%;height:auto;max-height:none;min-height:min(42vh,420px)}.left-wing,.right-wing{transform:none}.dashboard-container{height:auto;min-height:calc(100dvh - var(--cockpit-main-pt));min-height:calc(100vh - var(--cockpit-main-pt))}.bottom-dock{position:relative;bottom:auto;left:auto;transform:none;margin-top:auto;padding-top:16px}.modal-window{width:95%;height:min(calc(100dvh - 100px),calc(100vh - 100px))}}
+</style>
+<style>
+/* el-tooltip 挂载到 body，边框与背景需全局写 */
+.intercept-log-tooltip.el-popper {
+  background: var(--glass-bg-strong, rgba(15, 23, 42, 0.92)) !important;
+  border: 1px solid var(--glass-border-strong, rgba(56, 189, 248, 0.28)) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(12px);
+  border-radius: 8px;
+  padding: 10px 12px !important;
+}
+.intercept-log-tooltip .el-popper__arrow::before {
+  border-color: var(--glass-border-strong, rgba(56, 189, 248, 0.28)) !important;
+}
 </style>

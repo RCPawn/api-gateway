@@ -35,7 +35,7 @@ public class RouteController {
     }
 
     @DeleteMapping("/{id}")
-    public Result<String> delete(@PathVariable String id) {
+    public Result<String> delete(@PathVariable("id") String id) {
         try {
             routeService.deleteRoute(id);
             return Result.success("删除成功");

@@ -59,7 +59,7 @@ public class SentinelController {
      * 删除整个资源的防护 (包括限流和降级)
      */
     @DeleteMapping("/resource")
-    public Result<String> delete(@RequestParam String name) {
+    public Result<String> delete(@RequestParam("name") String name) {
         try {
             sentinelService.deleteResource(name);
             return Result.success("资源防护已移除");

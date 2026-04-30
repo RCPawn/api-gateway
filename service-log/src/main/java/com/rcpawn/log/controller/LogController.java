@@ -19,9 +19,9 @@ public class LogController {
 
     @GetMapping
     public Result<Page<GatewayLogDTO>> list(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String path) {
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "path", required = false) String path) {
 
         Page<GatewayLogDTO> result = logService.pageQuery(page, size, path);
         return Result.success(result);

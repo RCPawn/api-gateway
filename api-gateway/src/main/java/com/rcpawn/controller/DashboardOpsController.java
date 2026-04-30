@@ -32,7 +32,7 @@ public class DashboardOpsController { // 建议拆分一个新 Controller，或�
 
     // 2. WAF: 切换防火墙开关
     @PostMapping("/waf")
-    public Result<String> toggleWaf(@RequestParam boolean enable) {
+    public Result<String> toggleWaf(@RequestParam("enable") boolean enable) {
         if (enable) {
             redisTemplate.opsForValue().set(WafFilter.WAF_ENABLE_KEY, "true");
             return Result.success("WAF 防火墙已激活！高危 IP 将被拦截。");

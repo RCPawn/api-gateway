@@ -10,7 +10,9 @@ import java.util.Map;
 public class AuthController {
 
     @PostMapping("/login")
-    public Map<String, Object> login(@RequestParam String username, @RequestParam String password) {
+    public Map<String, Object> login(
+            @RequestParam("username") String username,
+            @RequestParam("password") String password) {
         Map<String, Object> result = new HashMap<>();
         
         // 1. 模拟数据库校验 (真实场景请查数据库)

@@ -65,6 +65,8 @@
                         <source>${java.version}</source>
                         <target>${java.version}</target>
                         <encoding>${project.build.sourceEncoding}</encoding>
+                        <!-- Spring MVC 可根据 @RequestParam / @PathVariable 解析参数名；显式 name 仍推荐 -->
+                        <parameters>true</parameters>
                     </configuration>
                 </plugin>
                 <plugin>
